@@ -1,0 +1,41 @@
+{
+  "name": "Agent Legend #62",
+  "description": "Agent Legends 2.0 is an elite cyberpunk tactical operative on BNB Smart Chain. Staking this operative unlocks spin credits and USDT bounty rewards.",
+  "image": "ipfs://bafybeidczpaz457x54jlwv2m3v3iugn56t4j65e5u7pwy5lq77kwe3q42a/62.png",
+  "external_url": "https://agentlegends.xyz/agent/62",
+  "edition": 62,
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Vanguard Enforcer"
+    },
+    {
+      "trait_type": "Cybernetics",
+      "value": "Plasma Core Reactor"
+    },
+    {
+      "trait_type": "Primary Weapon",
+      "value": "Plasma Scythe"
+    },
+    {
+      "trait_type": "Tactical Armor",
+      "value": "Heavy Combat Rig"
+    },
+    {
+      "trait_type": "Security Clearance",
+      "value": "Level 2 - Confidential"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power Rating",
+      "value": 72
+    },
+    {
+      "trait_type": "Staking Spin Yield",
+      "value": 1
+    }
+  ]
+}

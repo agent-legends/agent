@@ -1,0 +1,41 @@
+{
+  "name": "Agent Legend #11",
+  "description": "Agent Legends 2.0 is an elite cyberpunk tactical operative on BNB Smart Chain. Staking this operative unlocks spin credits and USDT bounty rewards.",
+  "image": "ipfs://bafybeidczpaz457x54jlwv2m3v3iugn56t4j65e5u7pwy5lq77kwe3q42a/11.png",
+  "external_url": "https://agentlegends.xyz/agent/11",
+  "edition": 11,
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Chrono Weaver"
+    },
+    {
+      "trait_type": "Cybernetics",
+      "value": "Overclocked Synapse"
+    },
+    {
+      "trait_type": "Primary Weapon",
+      "value": "Electromagnetic Blade"
+    },
+    {
+      "trait_type": "Tactical Armor",
+      "value": "Aegis Energy Mesh"
+    },
+    {
+      "trait_type": "Security Clearance",
+      "value": "Level 4 - Top Secret"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power Rating",
+      "value": 81
+    },
+    {
+      "trait_type": "Staking Spin Yield",
+      "value": 1
+    }
+  ]
+}

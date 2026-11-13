@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+  }
+
+  body {
+    background-color: #07090E;
+    color: #F1F5F9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Cyberpunk Glows & Glassmorphism */
+.glass-panel {
+  background: rgba(13, 17, 26, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 255, 102, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(0, 255, 102, 0.4);
+  box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
+}
+
+.glass-card-purple {
+  background: rgba(18, 12, 33, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(157, 78, 221, 0.25);
+}
+
+.glass-card-blue {
+  background: rgba(8, 22, 36, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+}
+
+.neon-text-green {
+  color: #00FF66;
+  text-shadow: 0 0 10px rgba(0, 255, 102, 0.7), 0 0 20px rgba(0, 255, 102, 0.4);
+}
+
+.neon-text-blue {
+  color: #00E5FF;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.7), 0 0 20px rgba(0, 229, 255, 0.4);
+}
+
+.neon-text-purple {
+  color: #C77DFF;
+  text-shadow: 0 0 10px rgba(157, 78, 221, 0.7), 0 0 20px rgba(157, 78, 221, 0.4);
+}
+
+.neon-border-green {
+  border: 1px solid #00FF66;
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.35);
+}
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #07090E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 102, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00FF66;
+  box-shadow: 0 0 10px #00FF66;
+}
+
+/* Cyber Scanline effect */
+.cyber-scanline {
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0, 255, 102, 0.05) 50%,
+    rgba(0, 255, 102, 0.05)
+  );
+  background-size: 100% 4px;
+}
+

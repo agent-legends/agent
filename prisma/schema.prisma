@@ -1,0 +1,106 @@
+// Prisma schema for Agent Legends 2.0
+// Off-chain analytics, cryptographic spin audit logs, manual USDT payout pipeline, and referral tracking.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  walletAddress        String      @id
+  referrerAddress      String?
+  totalMints           Int         @default(0)
+  totalStaked          Int         @default(0)
+  availableSpins       Int         @default(0)
+  totalSpins           Int         @default(0)
+  successfulReferrals  Int         @default(0)
+  referredNftCount     Int         @default(0)
+  claimedFreeNfts      Int         @default(0)
+  totalRewardsWonUsdt  Float       @default(0.0)
+  pendingPayoutUsdt    Float       @default(0.0)
+  paidPayoutUsdt       Float       @default(0.0)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  spins                Spin[]
+  payouts              Payout[]
+  transactions         Transaction[]
+
+  @@index([referrerAddress])
+}
+
+model Spin {
+  id                 String    @id @default(cuid())
+  spinId             String    @unique // e.g. SPIN-1718293-A8F2
+  walletAddress      String
+  outcome            String    // USD_0_10, USD_0_20, USD_0_50, USD_0_70, USD_1_00, FREE_SPIN, TRY_YOUR_LUCK
+  rewardAmountUsdt   Float     @default(0.0)
+  isFreeSpinAwarded  Boolean   @default(false)
+  randomNumber       Int       // 0 - 9999 generated cryptographically
+  randomSeed         String    // Hex random seed proof
+  isWinner           Boolean   @default(false)
+  payoutStatus       String    @default("NONE") // NONE, PENDING, PROCESSING, PAID, REJECTED
+  createdAt          DateTime  @default(now())
+
+  user               User      @relation(fields: [walletAddress], references: [walletAddress])
+  payout             Payout?
+
+  @@index([walletAddress])
+  @@index([payoutStatus])
+  @@index([createdAt])
+}
+
+model Payout {
+  id               String    @id @default(cuid())
+  spinId           String    @unique
+  walletAddress    String
+  rewardAmountUsdt Float
+  status           String    @default("PENDING") // PENDING, PROCESSING, PAID, REJECTED
+  txHash           String?   // BNB Smart Chain USDT transfer transaction hash
+  verifiedAt       DateTime?
+  adminNote        String?
+  rejectionReason  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [walletAddress], references: [walletAddress])
+  spin             Spin      @relation(fields: [spinId], references: [spinId])
+
+  @@index([walletAddress])
+  @@index([status])
+  @@index([txHash])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminWallet String
+  action      String   // e.g. "VERIFY_PAYOUT", "REJECT_PAYOUT", "EXPORT_REPORT"
+  targetId    String?
+  details     String   // JSON metadata
+  createdAt   DateTime @default(now())
+
+  @@index([adminWallet])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  txHash        String   @unique
+  walletAddress String
+  type          String   // MINT, STAKE, UNSTAKE, CLAIM_REFERRAL_NFT, USDT_PAYOUT
+  amount        String?
+  status        String   @default("CONFIRMED")
+  metadata      String?  // JSON metadata
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [walletAddress], references: [walletAddress])
+
+  @@index([walletAddress])
+  @@index([type])
+}
+
