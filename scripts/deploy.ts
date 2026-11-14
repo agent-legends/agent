@@ -4,7 +4,17 @@ import fs from "fs";
 import path from "path";
 
 async function main() {
+  if (
+    (network.name === "bscTestnet" || network.name === "bscMainnet") &&
+    !process.env.PRIVATE_KEY?.trim()
+  ) {
+    throw new Error("PRIVATE_KEY must be configured before deploying to BNB Chain.");
+  }
+
   const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error("No deployer account is configured for this network.");
+  }
   const chainId = (await ethers.provider.getNetwork()).chainId;
 
   console.log("==================================================");

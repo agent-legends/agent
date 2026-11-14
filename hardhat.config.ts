@@ -8,7 +8,14 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000001";
+const configuredPrivateKey = process.env.PRIVATE_KEY?.trim();
+const PRIVATE_KEY = configuredPrivateKey
+  ? configuredPrivateKey.startsWith("0x")
+    ? configuredPrivateKey
+    : `0x${configuredPrivateKey}`
+  : undefined;
+const DEPLOYER_ACCOUNTS =
+  PRIVATE_KEY && /^0x[0-9a-fA-F]{64}$/.test(PRIVATE_KEY) ? [PRIVATE_KEY] : [];
 const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY || "";
 
 const config: HardhatUserConfig = {
@@ -32,12 +39,12 @@ const config: HardhatUserConfig = {
     bscTestnet: {
       url: process.env.BSC_TESTNET_RPC || "https://data-seed-prebsc-1-s1.binance.org:8545/",
       chainId: 97,
-      accounts: [PRIVATE_KEY],
+      accounts: DEPLOYER_ACCOUNTS,
     },
     bscMainnet: {
       url: process.env.BSC_MAINNET_RPC || "https://bsc-dataseed.binance.org/",
       chainId: 56,
-      accounts: [PRIVATE_KEY],
+      accounts: DEPLOYER_ACCOUNTS,
     },
   },
   etherscan: {

@@ -7,25 +7,30 @@ import { Award, Clock, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle } fr
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
 export default function RewardsPage() {
-  const { isConnected, address } = useAccount();
+  const { address } = useAccount();
   const [userData, setUserData] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (address) {
       fetch(`/api/user?wallet=${address}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data) {
-            setUserData(data);
-            if (data.recentPayouts) setPayouts(data.recentPayouts);
-          }
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Reward data is unavailable.");
+          setUserData(data);
+          setPayouts(data.recentPayouts || []);
         })
-        .catch(() => {});
+        .catch((error: unknown) => {
+          setErrorMessage(error instanceof Error ? error.message : "Reward data is unavailable.");
+        });
     }
   }, [address]);
 
-  const testnetUsdt = CONTRACT_ADDRESSES[97].usdt;
+  const chainConfig =
+    Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID) === 56
+      ? CONTRACT_ADDRESSES[56]
+      : CONTRACT_ADDRESSES[97];
 
   return (
     <div className="space-y-12">
@@ -44,6 +49,10 @@ export default function RewardsPage() {
         </p>
       </div>
 
+      {errorMessage && (
+        <p className="max-w-4xl mx-auto text-xs text-amber-300" role="alert">{errorMessage}</p>
+      )}
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {/* Total Won */}
@@ -53,7 +62,7 @@ export default function RewardsPage() {
             <span>LIFETIME WON</span>
           </div>
           <div className="text-2xl font-black text-white font-mono">
-            ${(userData?.totalRewardsWonUsdt || 0.80).toFixed(2)} USDT
+            ${Number(userData?.totalRewardsWonUsdt ?? 0).toFixed(2)} USDT
           </div>
           <span className="text-[11px] font-mono text-slate-500">From prize-wheel rolls</span>
         </div>
@@ -65,7 +74,7 @@ export default function RewardsPage() {
             <span>PENDING DISPATCH</span>
           </div>
           <div className="text-2xl font-black text-amber-300 font-mono">
-            ${(userData?.pendingPayoutUsdt || 0.10).toFixed(2)} USDT
+            ${Number(userData?.pendingPayoutUsdt ?? 0).toFixed(2)} USDT
           </div>
           <span className="text-[11px] font-mono text-amber-400/80">In admin verification queue</span>
         </div>
@@ -77,7 +86,7 @@ export default function RewardsPage() {
             <span>VERIFIED PAID</span>
           </div>
           <div className="text-2xl font-black text-emerald-300 font-mono">
-            ${(userData?.paidPayoutUsdt || 0.70).toFixed(2)} USDT
+            ${Number(userData?.paidPayoutUsdt ?? 0).toFixed(2)} USDT
           </div>
           <span className="text-[11px] font-mono text-emerald-400/80">Confirmed on BSC blockchain</span>
         </div>
@@ -89,7 +98,7 @@ export default function RewardsPage() {
         <div>
           <span className="font-bold text-white">Verified BNB Smart Chain USDT Contract:</span>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            All payouts are dispatched using the official BSC USDT token contract ({testnetUsdt}). Decimals: 18. Each payment transaction is independently verified by backend JSON-RPC before status updates to Paid.
+            Configured BNB Smart Chain USDT token contract: {chainConfig.usdt}. Decimals: {chainConfig.usdtDecimals}. The backend verifies the transfer before a payout changes to Paid.
           </p>
         </div>
       </div>
@@ -145,7 +154,7 @@ export default function RewardsPage() {
                     <td className="py-3">
                       {p.txHash ? (
                         <a
-                          href={`https://testnet.bscscan.com/tx/${p.txHash}`}
+                          href={`${chainConfig.explorer}/tx/${p.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center space-x-1 text-[#00FF66] hover:underline"
@@ -170,4 +179,3 @@ export default function RewardsPage() {
     </div>
   );
 }
-

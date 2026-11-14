@@ -3,13 +3,8 @@
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
 import { FileText, Shield, Lock, Disc3, Users, Award, CheckCircle2, AlertTriangle, Code2 } from "lucide-react";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
 export default function DocsPage() {
-  const testnetNft = CONTRACT_ADDRESSES[97].nft;
-  const testnetStaking = CONTRACT_ADDRESSES[97].staking;
-  const testnetUsdt = CONTRACT_ADDRESSES[97].usdt;
-
   return (
     <div className="space-y-12 max-w-5xl mx-auto">
       <StatsHeader />
@@ -23,7 +18,7 @@ export default function DocsPage() {
           Agent Legends 2.0 Documentation
         </h1>
         <p className="text-xs text-slate-400">
-          Architecture, smart contract mechanics, economic security assumptions, and verifiable payout pipelines.
+          Architecture, smart contract mechanics, economic security assumptions, and manually verified payout processing.
         </p>
       </div>
 
@@ -35,14 +30,14 @@ export default function DocsPage() {
             <span>1. System Architecture & Technology Stack</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends 2.0 is built on BNB Smart Chain with a hybrid on-chain / off-chain design that guarantees strict custody and economic sustainability:
+            Agent Legends 2.0 targets BNB Smart Chain with a hybrid on-chain / off-chain design. Contracts and services must be independently reviewed and configured before production use.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
             <li><strong className="text-white">Smart Contracts:</strong> Solidity 0.8.24 with OpenZeppelin Contracts 5.x (ERC721Enumerable, Ownable2Step, Pausable, ReentrancyGuard).</li>
             <li><strong className="text-white">Price Feed Oracle:</strong> Chainlink BNB/USD Aggregator with strict price validation and 3-hour staleness checks.</li>
             <li><strong className="text-white">Staking Custody:</strong> Safe ERC-721 custody with an immutable 72-hour lock timer per staked NFT.</li>
-            <li><strong className="text-white">Randomness Engine:</strong> Server-side cryptographically secure pseudo-random number generator (CSPRNG) with audit seeds.</li>
-            <li><strong className="text-white">Frontend Web3:</strong> Next.js 14 App Router, Wagmi v2, Viem 2.x, RainbowKit, Tailwind CSS, Framer Motion.</li>
+            <li><strong className="text-white">Randomness Engine:</strong> Server-side cryptographically secure random number generation. Outcomes are centralized and cannot be independently verified as VRF results.</li>
+            <li><strong className="text-white">Frontend Web3:</strong> Next.js 15 App Router, Wagmi v2, Viem 2.x, RainbowKit, Tailwind CSS, Framer Motion.</li>
           </ul>
         </section>
 
@@ -185,4 +180,3 @@ export default function DocsPage() {
     </div>
   );
 }
-

@@ -1,79 +1,92 @@
 import { NextResponse } from "next/server";
-import { prisma, memoryStore } from "@/lib/db";
+import { createPublicClient, http, isAddress } from "viem";
+import { bsc, bscTestnet } from "viem/chains";
+import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI, AGENT_LEGENDS_STAKING_ABI } from "@/config/contracts";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
+  const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+  if (chainId !== 56 && chainId !== 97) {
+    return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
+  }
+
+  const config = CONTRACT_ADDRESSES[chainId];
+  if (!isAddress(config.nft) || !isAddress(config.staking)) {
+    return NextResponse.json(
+      { error: "NFT and staking contract addresses must be configured before live statistics are available." },
+      { status: 503 }
+    );
+  }
+
+  const client = createPublicClient({
+    chain: chainId === 56 ? bsc : bscTestnet,
+    transport: http(config.rpcUrl),
+  });
+
   try {
-    const totalUsers = await prisma.user.count();
-    const totalSpins = await prisma.spin.count();
-    const totalWinningSpins = await prisma.spin.count({ where: { isWinner: true } });
-    const pendingPayouts = await prisma.payout.aggregate({
-      where: { status: "PENDING" },
-      _sum: { rewardAmountUsdt: true },
-      _count: true,
-    });
-    const paidPayouts = await prisma.payout.aggregate({
-      where: { status: "PAID" },
-      _sum: { rewardAmountUsdt: true },
-      _count: true,
-    });
-
-    const userAggregates = await prisma.user.aggregate({
-      _sum: {
-        totalMints: true,
-        totalStaked: true,
-        totalRewardsWonUsdt: true,
-      },
-    });
-
-    return NextResponse.json({
-      totalSupply: 10000,
-      totalMinted: userAggregates._sum.totalMints || 342,
-      remainingSupply: 10000 - (userAggregates._sum.totalMints || 342),
-      mintPriceUsd: 0.20,
-      totalStaked: userAggregates._sum.totalStaked || 289,
-      totalSpins: totalSpins || 512,
-      totalWinners: totalWinningSpins || 480,
-      totalRewardsDistributedUsdt: (userAggregates._sum.totalRewardsWonUsdt || 0) + 64.8,
-      pendingPayoutsCount: pendingPayouts._count || 8,
-      pendingPayoutsAmountUsdt: pendingPayouts._sum.rewardAmountUsdt || 1.40,
-      paidPayoutsCount: paidPayouts._count || 472,
-      paidPayoutsAmountUsdt: paidPayouts._sum.rewardAmountUsdt || 63.40,
-      totalUsers: totalUsers || 188,
-    });
-  } catch {
-    // Memory fallback
-    let totalWon = 0;
-    let pendingAmount = 0;
-    let paidAmount = 0;
-    let pendingCount = 0;
-    let paidCount = 0;
-
-    for (const p of memoryStore.payouts) {
-      if (p.status === "PENDING") {
-        pendingAmount += p.rewardAmountUsdt;
-        pendingCount++;
-      } else if (p.status === "PAID") {
-        paidAmount += p.rewardAmountUsdt;
-        paidCount++;
-      }
-      totalWon += p.rewardAmountUsdt;
-    }
+    const [
+      minted,
+      remaining,
+      staked,
+      totalUsers,
+      totalSpins,
+      totalWinningSpins,
+      pendingPayouts,
+      paidPayouts,
+      userRewards,
+    ] = await Promise.all([
+      client.readContract({
+        address: config.nft,
+        abi: AGENT_LEGENDS_NFT_ABI,
+        functionName: "totalSupply",
+        authorizationList: undefined,
+      }),
+      client.readContract({
+        address: config.nft,
+        abi: AGENT_LEGENDS_NFT_ABI,
+        functionName: "remainingSupply",
+        authorizationList: undefined,
+      }),
+      client.readContract({
+        address: config.staking,
+        abi: AGENT_LEGENDS_STAKING_ABI,
+        functionName: "totalStakedCount",
+        authorizationList: undefined,
+      }),
+      prisma.user.count(),
+      prisma.spin.count(),
+      prisma.spin.count({ where: { isWinner: true } }),
+      prisma.payout.aggregate({
+        where: { status: { in: ["PENDING", "PROCESSING"] } },
+        _sum: { rewardAmountUsdt: true },
+        _count: true,
+      }),
+      prisma.payout.aggregate({
+        where: { status: "PAID" },
+        _sum: { rewardAmountUsdt: true },
+        _count: true,
+      }),
+      prisma.user.aggregate({ _sum: { totalRewardsWonUsdt: true } }),
+    ]);
 
     return NextResponse.json({
       totalSupply: 10000,
-      totalMinted: 342,
-      remainingSupply: 9658,
-      mintPriceUsd: 0.20,
-      totalStaked: 289,
-      totalSpins: memoryStore.spins.length || 512,
-      totalWinners: memoryStore.spins.filter((s) => s.isWinner).length || 480,
-      totalRewardsDistributedUsdt: totalWon || 64.8,
-      pendingPayoutsCount: pendingCount || 8,
-      pendingPayoutsAmountUsdt: pendingAmount || 1.40,
-      paidPayoutsCount: paidCount || 472,
-      paidPayoutsAmountUsdt: paidAmount || 63.40,
-      totalUsers: memoryStore.users.size || 188,
+      totalMinted: Number(minted),
+      remainingSupply: Number(remaining),
+      mintPriceUsd: 0.2,
+      totalStaked: Number(staked),
+      totalSpins,
+      totalWinners: totalWinningSpins,
+      totalRewardsWonUsdt: userRewards._sum.totalRewardsWonUsdt ?? 0,
+      totalRewardsDistributedUsdt: paidPayouts._sum.rewardAmountUsdt ?? 0,
+      pendingPayoutsCount: pendingPayouts._count,
+      pendingPayoutsAmountUsdt: pendingPayouts._sum.rewardAmountUsdt ?? 0,
+      paidPayoutsCount: paidPayouts._count,
+      paidPayoutsAmountUsdt: paidPayouts._sum.rewardAmountUsdt ?? 0,
+      totalUsers,
     });
+  } catch (error: unknown) {
+    console.error("Platform statistics could not be loaded:", error);
+    return NextResponse.json({ error: "Platform statistics are temporarily unavailable." }, { status: 503 });
   }
 }
-

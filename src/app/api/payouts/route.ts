@@ -1,233 +1,261 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, memoryStore } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { isAddress } from "viem";
+import { getAdminSessionWallet, hasValidAdminOrigin } from "@/lib/adminAuth";
+import { prisma } from "@/lib/db";
 import { verifyUsdtPayoutTransaction } from "@/lib/payoutVerifier";
-import { isAddressAdmin } from "@/lib/adminAuth";
+
+type PayoutAction = "START_PAYOUT" | "VERIFY_PAYOUT" | "REJECT_PAYOUT";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const wallet = searchParams.get("wallet")?.toLowerCase();
   const status = searchParams.get("status")?.toUpperCase();
+  const isAdminRequest = !wallet;
+
+  if (wallet && !isAddress(wallet)) {
+    return NextResponse.json({ error: "Invalid wallet address." }, { status: 400 });
+  }
+  if (isAdminRequest && !getAdminSessionWallet(req)) {
+    return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
+  }
+  if (status && !["ALL", "PENDING", "PROCESSING", "PAID", "REJECTED"].includes(status)) {
+    return NextResponse.json({ error: "Invalid payout status." }, { status: 400 });
+  }
+
+  const where: Prisma.PayoutWhereInput = {};
+  if (wallet) where.walletAddress = wallet;
+  if (status && status !== "ALL") where.status = status;
 
   try {
-    const where: any = {};
-    if (wallet) where.walletAddress = wallet;
-    if (status && status !== "ALL") where.status = status;
-
     const payouts = await prisma.payout.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take: 100,
     });
-
     return NextResponse.json({ payouts });
-  } catch {
-    // Memory fallback
-    let list = [...memoryStore.payouts];
-    if (wallet) list = list.filter((p) => p.walletAddress === wallet);
-    if (status && status !== "ALL") list = list.filter((p) => p.status === status);
-
-    return NextResponse.json({ payouts: list });
+  } catch (error: unknown) {
+    console.error("Payout records could not be loaded:", error);
+    return NextResponse.json({ error: "Payout records are temporarily unavailable." }, { status: 503 });
   }
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasValidAdminOrigin(req)) {
+    return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
+  const adminWallet = getAdminSessionWallet(req);
+  if (!adminWallet) {
+    return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
+  }
+
+  const body: unknown = await req.json();
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("action" in body) ||
+    !("spinId" in body)
+  ) {
+    return NextResponse.json({ error: "Invalid payout action request." }, { status: 400 });
+  }
+
+  const { action, spinId, txHash, rejectionReason, adminNote } = body as {
+    action: unknown;
+    spinId: unknown;
+    txHash?: unknown;
+    rejectionReason?: unknown;
+    adminNote?: unknown;
+  };
+  if (
+    typeof action !== "string" ||
+    !["START_PAYOUT", "VERIFY_PAYOUT", "REJECT_PAYOUT"].includes(action) ||
+    typeof spinId !== "string" ||
+    spinId.length < 1 ||
+    spinId.length > 100
+  ) {
+    return NextResponse.json({ error: "Invalid payout action request." }, { status: 400 });
+  }
+
+  const payoutAction = action as PayoutAction;
   try {
-    const body = await req.json();
-    const { action, spinId, txHash, adminWallet, adminNote, rejectionReason, chainId } = body;
-
-    // Check admin authorization
-    if (!adminWallet || !isAddressAdmin(adminWallet)) {
-      return NextResponse.json(
-        { error: "Unauthorized: Wallet is not an approved admin." },
-        { status: 403 }
-      );
+    const payout = await prisma.payout.findUnique({ where: { spinId } });
+    if (!payout) {
+      return NextResponse.json({ error: "Payout record not found." }, { status: 404 });
     }
 
-    if (!spinId) {
-      return NextResponse.json({ error: "Missing spinId parameter." }, { status: 400 });
-    }
-
-    if (action === "VERIFY_PAYOUT") {
-      if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
-        return NextResponse.json(
-          { error: "Invalid BNB Smart Chain transaction hash format." },
-          { status: 400 }
-        );
-      }
-
-      // Retrieve payout record
-      let targetPayout: any;
-      try {
-        targetPayout = await prisma.payout.findUnique({
-          where: { spinId },
+    if (payoutAction === "START_PAYOUT") {
+      const changed = await prisma.$transaction(async (tx) => {
+        const result = await tx.payout.updateMany({
+          where: { spinId, status: "PENDING", txHash: null },
+          data: { status: "PROCESSING" },
         });
-      } catch {
-        targetPayout = memoryStore.payouts.find((p) => p.spinId === spinId);
-      }
+        if (result.count !== 1) return false;
 
-      if (!targetPayout) {
-        return NextResponse.json({ error: "Payout record not found." }, { status: 404 });
-      }
-
-      if (targetPayout.status === "PAID") {
-        return NextResponse.json(
-          { error: "This payout has already been verified and paid. Cannot re-verify." },
-          { status: 400 }
-        );
-      }
-
-      // Perform strict on-chain verification
-      const verifyResult = await verifyUsdtPayoutTransaction(
-        txHash,
-        targetPayout.walletAddress,
-        targetPayout.rewardAmountUsdt,
-        chainId || 97
-      );
-
-      if (!verifyResult.isValid) {
-        return NextResponse.json(
-          {
-            error: "On-chain transaction verification failed.",
-            details: verifyResult.error,
+        await tx.spin.update({ where: { spinId }, data: { payoutStatus: "PROCESSING" } });
+        await tx.adminAuditLog.create({
+          data: {
+            adminWallet,
+            action: "PAYOUT_PROCESSING",
+            targetId: spinId,
+            details: JSON.stringify({ walletAddress: payout.walletAddress }),
           },
+        });
+        return true;
+      });
+
+      if (!changed) {
+        return NextResponse.json({ error: "Only a pending payout can be moved to processing." }, { status: 409 });
+      }
+      return NextResponse.json({ success: true, spinId, status: "PROCESSING" });
+    }
+
+    if (payout.status !== "PENDING" && payout.status !== "PROCESSING") {
+      return NextResponse.json({ error: "This payout is already finalized." }, { status: 409 });
+    }
+
+    if (payoutAction === "VERIFY_PAYOUT") {
+      if (payout.status !== "PROCESSING") {
+        return NextResponse.json({ error: "Start processing before verifying a payment." }, { status: 409 });
+      }
+      if (typeof txHash !== "string" || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+        return NextResponse.json({ error: "Invalid BNB Chain transaction hash." }, { status: 400 });
+      }
+      const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+      if (chainId !== 56 && chainId !== 97) {
+        return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
+      }
+
+      const normalizedTxHash = txHash.toLowerCase() as `0x${string}`;
+      const verification = await verifyUsdtPayoutTransaction(
+        normalizedTxHash,
+        payout.walletAddress as `0x${string}`,
+        payout.rewardAmountUsdt,
+        chainId
+      );
+      if (!verification.isValid) {
+        await prisma.adminAuditLog.create({
+          data: {
+            adminWallet,
+            action: "PAYOUT_VERIFICATION_FAILED",
+            targetId: spinId,
+            details: JSON.stringify({
+              txHash: normalizedTxHash,
+              error: verification.error,
+            }),
+          },
+        });
+        return NextResponse.json(
+          { error: "On-chain transaction verification failed.", details: verification.error },
           { status: 422 }
         );
       }
 
-      // Verification successful! Update DB and log audit trail
-      const now = new Date();
       try {
-        await prisma.$transaction(async (tx) => {
-          await tx.payout.update({
-            where: { spinId },
-            data: {
-              status: "PAID",
-              txHash,
-              verifiedAt: now,
-              adminNote: adminNote || `Verified by ${adminWallet}`,
-            },
-          });
+        await prisma.$transaction(
+          async (tx) => {
+            const changed = await tx.payout.updateMany({
+              where: {
+                spinId,
+                status: { in: ["PENDING", "PROCESSING"] },
+                txHash: null,
+              },
+              data: {
+                status: "PAID",
+                txHash: normalizedTxHash,
+                verifiedAt: new Date(),
+                adminNote: typeof adminNote === "string" ? adminNote.slice(0, 500) : null,
+              },
+            });
+            if (changed.count !== 1) throw new Error("Payout was finalized by another request.");
 
-          await tx.spin.update({
-            where: { spinId },
-            data: { payoutStatus: "PAID" },
-          });
-
-          await tx.user.update({
-            where: { walletAddress: targetPayout.walletAddress },
-            data: {
-              pendingPayoutUsdt: { decrement: targetPayout.rewardAmountUsdt },
-              paidPayoutUsdt: { increment: targetPayout.rewardAmountUsdt },
-            },
-          });
-
-          await tx.adminAuditLog.create({
-            data: {
-              adminWallet: adminWallet.toLowerCase(),
-              action: "PAYOUT_VERIFIED",
-              targetId: spinId,
-              details: JSON.stringify({
-                txHash,
-                winner: targetPayout.walletAddress,
-                amountUsdt: targetPayout.rewardAmountUsdt,
-                blockNumber: verifyResult.blockNumber?.toString(),
-              }),
-            },
-          });
-        });
-      } catch {
-        targetPayout.status = "PAID";
-        targetPayout.txHash = txHash;
-        targetPayout.verifiedAt = now;
-        targetPayout.adminNote = adminNote;
-
-        const user = memoryStore.users.get(targetPayout.walletAddress);
-        if (user) {
-          user.pendingPayoutUsdt = Math.max(0, (user.pendingPayoutUsdt || 0) - targetPayout.rewardAmountUsdt);
-          user.paidPayoutUsdt = (user.paidPayoutUsdt || 0) + targetPayout.rewardAmountUsdt;
+            await tx.spin.update({ where: { spinId }, data: { payoutStatus: "PAID" } });
+            await tx.user.update({
+              where: { walletAddress: payout.walletAddress },
+              data: {
+                pendingPayoutUsdt: { decrement: payout.rewardAmountUsdt },
+                paidPayoutUsdt: { increment: payout.rewardAmountUsdt },
+              },
+            });
+            await tx.adminAuditLog.create({
+              data: {
+                adminWallet,
+                action: "PAYOUT_VERIFIED",
+                targetId: spinId,
+                details: JSON.stringify({
+                  txHash: normalizedTxHash,
+                  walletAddress: payout.walletAddress,
+                  amountUsdt: payout.rewardAmountUsdt,
+                  blockNumber: verification.blockNumber?.toString(),
+                }),
+              },
+            });
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
+      } catch (error: unknown) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          return NextResponse.json(
+            { error: "This transaction hash has already been used for another payout." },
+            { status: 409 }
+          );
         }
-
-        memoryStore.auditLogs.unshift({
-          id: `log_${Date.now()}`,
-          adminWallet,
-          action: "PAYOUT_VERIFIED",
-          targetId: spinId,
-          details: { txHash, amountUsdt: targetPayout.rewardAmountUsdt },
-          createdAt: now,
-        });
+        if (error instanceof Error && error.message === "Payout was finalized by another request.") {
+          return NextResponse.json({ error: error.message }, { status: 409 });
+        }
+        throw error;
       }
 
       return NextResponse.json({
         success: true,
-        message: "USDT payout successfully verified and recorded on BNB Smart Chain.",
         spinId,
         status: "PAID",
-        txHash,
-        verifiedAt: now,
+        txHash: normalizedTxHash,
+        verifiedAt: new Date().toISOString(),
       });
     }
 
-    if (action === "REJECT_PAYOUT") {
-      let targetPayout: any;
-      try {
-        targetPayout = await prisma.payout.findUnique({ where: { spinId } });
-      } catch {
-        targetPayout = memoryStore.payouts.find((p) => p.spinId === spinId);
-      }
-
-      if (!targetPayout) {
-        return NextResponse.json({ error: "Payout record not found." }, { status: 404 });
-      }
-
-      if (targetPayout.status === "PAID") {
-        return NextResponse.json(
-          { error: "Cannot reject an already completed and paid reward." },
-          { status: 400 }
-        );
-      }
-
-      try {
-        await prisma.$transaction(async (tx) => {
-          await tx.payout.update({
-            where: { spinId },
-            data: {
-              status: "REJECTED",
-              rejectionReason: rejectionReason || "Rejected by admin audit",
-            },
-          });
-
-          await tx.spin.update({
-            where: { spinId },
-            data: { payoutStatus: "REJECTED" },
-          });
-
-          await tx.adminAuditLog.create({
-            data: {
-              adminWallet: adminWallet.toLowerCase(),
-              action: "PAYOUT_REJECTED",
-              targetId: spinId,
-              details: JSON.stringify({ reason: rejectionReason }),
-            },
-          });
-        });
-      } catch {
-        targetPayout.status = "REJECTED";
-        targetPayout.rejectionReason = rejectionReason;
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Payout rejected and recorded in audit log.",
-        spinId,
-        status: "REJECTED",
-      });
+    const reason =
+      typeof rejectionReason === "string" && rejectionReason.trim()
+        ? rejectionReason.trim().slice(0, 500)
+        : null;
+    if (!reason) {
+      return NextResponse.json({ error: "A rejection reason is required." }, { status: 400 });
     }
 
-    return NextResponse.json({ error: "Invalid action." }, { status: 400 });
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("Payout update error:", errorMsg);
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    const rejected = await prisma.$transaction(async (tx) => {
+      const changed = await tx.payout.updateMany({
+        where: {
+          spinId,
+          status: "PENDING",
+          txHash: null,
+        },
+        data: { status: "REJECTED", rejectionReason: reason },
+      });
+      if (changed.count !== 1) return false;
+
+      await tx.spin.update({ where: { spinId }, data: { payoutStatus: "REJECTED" } });
+      await tx.user.update({
+        where: { walletAddress: payout.walletAddress },
+        data: { pendingPayoutUsdt: { decrement: payout.rewardAmountUsdt } },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          adminWallet,
+          action: "PAYOUT_REJECTED",
+          targetId: spinId,
+          details: JSON.stringify({ reason }),
+        },
+      });
+      return true;
+    });
+
+    if (!rejected) {
+      return NextResponse.json({ error: "Only a pending payout can be rejected." }, { status: 409 });
+    }
+    return NextResponse.json({ success: true, spinId, status: "REJECTED" });
+  } catch (error: unknown) {
+    console.error("Payout action failed:", error);
+    return NextResponse.json({ error: "Payout action could not be completed." }, { status: 500 });
   }
 }
-

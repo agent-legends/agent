@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useChainId } from "wagmi";
+import { useAccount, useWriteContract, useChainId, useSignMessage } from "wagmi";
 import { Shield, ShieldAlert, Award, Disc3, Users, CheckCircle2, XCircle, ExternalLink, Download, Lock, Unlock, AlertCircle, RefreshCw } from "lucide-react";
-import { isAddressAdmin } from "@/lib/adminAuth";
+import { isPublicAdminWallet } from "@/lib/publicAdminAuth";
+import { createAdminLoginMessage } from "@/lib/authMessages";
 import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI, AGENT_LEGENDS_STAKING_ABI } from "@/config/contracts";
 
 interface PayoutItem {
@@ -20,6 +21,7 @@ interface PayoutItem {
 
 export default function AdminPage() {
   const { isConnected, address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const chainId = useChainId();
 
   const [activeTab, setActiveTab] = useState<"PAYOUTS" | "NFT_STAKING" | "SPINS" | "AUDIT">("PAYOUTS");
@@ -29,44 +31,124 @@ export default function AdminPage() {
   const [verifyingSpinId, setVerifyingSpinId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticating, setAuthenticating] = useState(false);
 
-  const isAdmin = isAddressAdmin(address);
+  const isAdmin = isPublicAdminWallet(address);
+  const chainConfig = chainId === 56 ? CONTRACT_ADDRESSES[56] : CONTRACT_ADDRESSES[97];
+
+  const handleAdminLogin = async () => {
+    if (!address) return;
+    setAuthenticating(true);
+    setActionMessage(null);
+    try {
+      const timestamp = Date.now();
+      const requestId = crypto.randomUUID();
+      const signature = await signMessageAsync({
+        account: address,
+        message: createAdminLoginMessage(address, timestamp, requestId),
+      });
+      const response = await fetch("/api/admin/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: address, timestamp, requestId, signature }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Admin authentication failed.");
+      setAuthenticated(true);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setActionMessage({ text: message, isError: true });
+    } finally {
+      setAuthenticating(false);
+    }
+  };
 
   const fetchPayouts = () => {
     fetch("/api/payouts")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Payout records could not be loaded.");
+        return data;
+      })
       .then((data) => {
         if (data && Array.isArray(data.payouts)) {
           setPayouts(data.payouts);
         }
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.message.includes("authentication")) setAuthenticated(false);
+        setActionMessage({
+          text: error instanceof Error ? error.message : "Payout records could not be loaded.",
+          isError: true,
+        });
+      });
   };
 
   const fetchSpins = () => {
     fetch("/api/spins?limit=50")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Spin history could not be loaded.");
+        return data;
+      })
       .then((data) => {
         if (data && Array.isArray(data.spins)) {
           setSpins(data.spins);
         }
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.message.includes("authentication")) setAuthenticated(false);
+        setActionMessage({
+          text: error instanceof Error ? error.message : "Spin history could not be loaded.",
+          isError: true,
+        });
+      });
   };
 
   const fetchStats = () => {
     fetch("/api/stats")
-      .then((res) => res.json())
-      .then((data) => setStats(data))
-      .catch(() => {});
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Platform statistics could not be loaded.");
+        setStats(data);
+      })
+      .catch((error: unknown) => {
+        setActionMessage({
+          text: error instanceof Error ? error.message : "Platform statistics could not be loaded.",
+          isError: true,
+        });
+      });
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin && authenticated) {
       fetchPayouts();
       fetchSpins();
       fetchStats();
     }
+  }, [isAdmin, authenticated, address]);
+
+  useEffect(() => {
+    if (!isAdmin || !address) {
+      setAuthenticated(false);
+      return;
+    }
+
+    fetch("/api/admin/session")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Admin session could not be checked.");
+        setAuthenticated(
+          data.authenticated && data.walletAddress?.toLowerCase() === address.toLowerCase()
+        );
+      })
+      .catch((error: unknown) => {
+        setActionMessage({
+          text: error instanceof Error ? error.message : "Admin session could not be checked.",
+          isError: true,
+        });
+      });
   }, [isAdmin, address]);
 
   const handleVerifyPayout = async (spinId: string) => {
@@ -87,8 +169,7 @@ export default function AdminPage() {
           action: "VERIFY_PAYOUT",
           spinId,
           txHash,
-          adminWallet: address,
-          chainId: chainId || 97,
+          adminNote: `Verified by ${address} on chain ${chainId}.`,
         }),
       });
 
@@ -99,6 +180,7 @@ export default function AdminPage() {
 
       setActionMessage({ text: `Payout verified and confirmed on BNB Chain for ${spinId}!`, isError: false });
       fetchPayouts();
+      fetchSpins();
       fetchStats();
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -119,7 +201,6 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: "REJECT_PAYOUT",
           spinId,
-          adminWallet: address,
           rejectionReason: reason,
         }),
       });
@@ -132,6 +213,40 @@ export default function AdminPage() {
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       setActionMessage({ text: errorMsg, isError: true });
+    }
+  };
+
+  const handleStartPayout = async (spinId: string) => {
+    try {
+      const response = await fetch("/api/payouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "START_PAYOUT", spinId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not move payout to processing.");
+      setActionMessage({ text: `Payout ${spinId} is now processing.`, isError: false });
+      fetchPayouts();
+    } catch (error: unknown) {
+      setActionMessage({
+        text: error instanceof Error ? error.message : "Could not update payout.",
+        isError: true,
+      });
+    }
+  };
+
+  const handleAdminLogout = async () => {
+    try {
+      const response = await fetch("/api/admin/session", { method: "DELETE" });
+      if (!response.ok) throw new Error("Admin session could not be closed.");
+      setAuthenticated(false);
+      setPayouts([]);
+      setSpins([]);
+    } catch (error: unknown) {
+      setActionMessage({
+        text: error instanceof Error ? error.message : "Admin session could not be closed.",
+        isError: true,
+      });
     }
   };
 
@@ -180,13 +295,32 @@ export default function AdminPage() {
     return (
       <div className="max-w-xl mx-auto glass-panel p-12 rounded-3xl text-center space-y-4 my-12 border border-red-500/30">
         <ShieldAlert className="w-12 h-12 text-red-400 mx-auto" />
-        <h2 className="text-xl font-bold font-mono text-white">Access Denied (Unauthorized)</h2>
+        <h2 className="text-xl font-bold font-mono text-white">Admin Wallet Not Configured</h2>
         <p className="text-xs text-slate-400">
-          Wallet <code className="text-red-300 font-mono">{address}</code> is not on the authorized administrative registry. Role-based security active.
+          This wallet is not listed in the public admin wallet configuration. Server-side authorization is independently enforced.
         </p>
-        <p className="text-[11px] text-slate-500">
-          Authorized testing wallets: 0x89D22fBeDdB1A8c61e4796B07DE2592518eE4F32, 0x53D8330cfdE0e633d62325E67a8ff17f7300c3b8
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="max-w-xl mx-auto glass-panel p-12 rounded-3xl text-center space-y-4 my-12">
+        <Shield className="w-12 h-12 text-[#00FF66] mx-auto" />
+        <h2 className="text-xl font-bold font-mono text-white">Admin Signature Required</h2>
+        <p className="text-xs text-slate-400">
+          Sign a short-lived login message with the configured admin wallet. The signature does not authorize a blockchain transaction.
         </p>
+        {actionMessage && (
+          <p className="text-xs text-red-300" role="alert">{actionMessage.text}</p>
+        )}
+        <button
+          onClick={handleAdminLogin}
+          disabled={authenticating}
+          className="px-5 py-3 rounded-xl bg-[#00FF66] text-[#07090E] font-bold font-mono text-xs disabled:opacity-50"
+        >
+          {authenticating ? "AUTHENTICATING..." : "AUTHENTICATE ADMIN"}
+        </button>
       </div>
     );
   }
@@ -219,6 +353,12 @@ export default function AdminPage() {
             title="Refresh All Records"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleAdminLogout}
+            className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-xs font-mono"
+          >
+            Sign out
           </button>
         </div>
       </div>
@@ -298,14 +438,14 @@ export default function AdminPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {payouts.map((p) => {
-                  const isPending = p.status === "PENDING";
+                  const isActionable = p.status === "PENDING" || p.status === "PROCESSING";
                   return (
                     <tr key={p.spinId} className="hover:bg-slate-900/40">
                       <td className="py-3 text-slate-300 font-bold">{p.spinId}</td>
                       <td className="py-3">
                         <span className="text-white font-medium">{p.walletAddress}</span>
                         <a
-                          href={`https://testnet.bscscan.com/address/${p.walletAddress}`}
+                          href={`${chainConfig.explorer}/address/${p.walletAddress}`}
                           target="_blank"
                           rel="noreferrer"
                           className="ml-1.5 inline-block text-[#00E5FF] hover:underline"
@@ -321,7 +461,9 @@ export default function AdminPage() {
                               ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                               : p.status === "PENDING"
                               ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                              : "bg-red-500/20 text-red-300 border border-red-500/30"
+                                : p.status === "PROCESSING"
+                                ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                : "bg-red-500/20 text-red-300 border border-red-500/30"
                           }`}
                         >
                           {p.status}
@@ -330,7 +472,7 @@ export default function AdminPage() {
                       <td className="py-3">
                         {p.status === "PAID" ? (
                           <a
-                            href={`https://testnet.bscscan.com/tx/${p.txHash}`}
+                            href={`${chainConfig.explorer}/tx/${p.txHash}`}
                             target="_blank"
                             rel="noreferrer"
                             className="text-[#00FF66] hover:underline flex items-center space-x-1"
@@ -351,21 +493,33 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td className="py-3 text-right">
-                        {isPending ? (
+                        {isActionable ? (
                           <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={() => handleVerifyPayout(p.spinId)}
-                              disabled={verifyingSpinId === p.spinId}
-                              className="px-3 py-1 rounded bg-[#00FF66] text-[#07090E] font-bold text-[11px] hover:bg-[#00CC52] transition-colors"
-                            >
-                              {verifyingSpinId === p.spinId ? "Verifying..." : "Verify & Mark Paid"}
-                            </button>
-                            <button
-                              onClick={() => handleRejectPayout(p.spinId)}
-                              className="px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 text-[11px]"
-                            >
-                              Reject
-                            </button>
+                            {p.status === "PENDING" && (
+                              <button
+                                onClick={() => handleStartPayout(p.spinId)}
+                                className="px-2 py-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-[11px]"
+                              >
+                                Processing
+                              </button>
+                            )}
+                            {p.status === "PROCESSING" && (
+                              <button
+                                onClick={() => handleVerifyPayout(p.spinId)}
+                                disabled={verifyingSpinId === p.spinId}
+                                className="px-3 py-1 rounded bg-[#00FF66] text-[#07090E] font-bold text-[11px] hover:bg-[#00CC52] transition-colors"
+                              >
+                                {verifyingSpinId === p.spinId ? "Verifying..." : "Verify & Mark Paid"}
+                              </button>
+                            )}
+                            {p.status === "PENDING" && (
+                              <button
+                                onClick={() => handleRejectPayout(p.spinId)}
+                                className="px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 text-[11px]"
+                              >
+                                Reject
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <span className="text-slate-500 text-[11px]">Finalized</span>
@@ -468,7 +622,7 @@ export default function AdminPage() {
           </h3>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs font-mono text-slate-300">
             <p>• Payout verification is locked: once status is Paid, records cannot be modified or deleted.</p>
-            <p>• Centralized CSPRNG randomness is explicitly disclosed to players and verified with audit seeds.</p>
+            <p>• Centralized CSPRNG outcomes are disclosed to players and recorded in the admin history; they are not independently verifiable VRF results.</p>
             <p>• USDT transfers are matched against official BSC token transfer logs with 18 decimal precision.</p>
           </div>
           <div className="flex space-x-3">
@@ -490,4 +644,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

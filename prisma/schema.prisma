@@ -36,12 +36,12 @@ model User {
 model Spin {
   id                 String    @id @default(cuid())
   spinId             String    @unique // e.g. SPIN-1718293-A8F2
+  requestId          String    @unique
   walletAddress      String
   outcome            String    // USD_0_10, USD_0_20, USD_0_50, USD_0_70, USD_1_00, FREE_SPIN, TRY_YOUR_LUCK
   rewardAmountUsdt   Float     @default(0.0)
   isFreeSpinAwarded  Boolean   @default(false)
   randomNumber       Int       // 0 - 9999 generated cryptographically
-  randomSeed         String    // Hex random seed proof
   isWinner           Boolean   @default(false)
   payoutStatus       String    @default("NONE") // NONE, PENDING, PROCESSING, PAID, REJECTED
   createdAt          DateTime  @default(now())
@@ -60,7 +60,7 @@ model Payout {
   walletAddress    String
   rewardAmountUsdt Float
   status           String    @default("PENDING") // PENDING, PROCESSING, PAID, REJECTED
-  txHash           String?   // BNB Smart Chain USDT transfer transaction hash
+  txHash           String?   @unique // A transaction can settle at most one payout
   verifiedAt       DateTime?
   adminNote        String?
   rejectionReason  String?
@@ -103,4 +103,3 @@ model Transaction {
   @@index([walletAddress])
   @@index([type])
 }
-

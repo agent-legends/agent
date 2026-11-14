@@ -1,8 +1,8 @@
 # Agent Legends 2.0 — Web3 NFT Minting, 72h Staking & Spin-to-Earn Platform
 
-A production-ready Web3 gaming and bounty ecosystem deployed on **BNB Smart Chain (BSC)**.
+An in-development Web3 NFT minting, staking, spin, and referral platform targeting **BNB Smart Chain (BSC)**. It has not been audited or cleared for mainnet deployment. Configure and validate contracts, services, metadata, and payout reserves on testnet before production use.
 
-Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainlink BNB/USD oracle pricing, a mandatory 72-hour staking custody vault, a server-side cryptographically secure pseudo-random number generator (CSPRNG) prize wheel, and an audited administrative USDT manual payout pipeline with real-time on-chain transaction verification.
+Agent Legends 2.0 combines ERC-721 token mechanics, dynamic Chainlink BNB/USD oracle pricing, a mandatory 72-hour staking custody vault, a server-side cryptographically secure random prize wheel, and an administrator-audited USDT payout pipeline with on-chain transaction verification.
 
 ---
 
@@ -11,7 +11,7 @@ Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainl
 ```
                                ┌─────────────────────────────────────────────────────────────┐
                                │                    Agent Legends 2.0 UI                     │
-                               │        Next.js 14 (App Router) • Wagmi • Viem • Tailwind    │
+                               │        Next.js 15 (App Router) • Wagmi • Viem • Tailwind    │
                                └──────────────┬───────────────────────────────┬──────────────┘
                                               │                               │
                                        Web3 Transactions               REST / JSON-RPC
@@ -27,10 +27,10 @@ Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainl
                       └─────────────────────────────────┘   └───────────────────────────────────┘
 ```
 
-- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Framer Motion, Wagmi v2, Viem 2.x, RainbowKit v2, Lucide Icons, Canvas Confetti.
+- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS, Framer Motion, Wagmi v2, Viem 2.x, RainbowKit v2, Lucide Icons, Canvas Confetti.
 - **Smart Contracts:** Solidity 0.8.24, OpenZeppelin Contracts 5.x (`ERC721Enumerable`, `Ownable2Step`, `Pausable`, `ReentrancyGuard`).
 - **Oracles:** Chainlink BNB/USD Aggregator with strict 3-hour staleness and round-id validation.
-- **Randomness Engine:** Server-side Node.js Cryptographically Secure Pseudo-Random Number Generator (`crypto.randomInt(0, 10000)` and 256-bit audit seeds).
+- **Randomness Engine:** Server-side Node.js cryptographically secure random number generator (`crypto.randomInt(0, 10000)`). Results are centralized and are not independently verifiable VRF outcomes.
 - **Off-chain Storage & Indexing:** PostgreSQL with Prisma ORM, Cloudflare R2 / IPFS decentralized metadata.
 - **Payout Settlement:** Admin-dispatched USDT transactions verified directly on-chain via BSC JSON-RPC.
 
@@ -65,7 +65,7 @@ Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainl
   | **$1.00 USDT** | 1% | 9,200 – 9,299 | `USD_1_00` | Manual Verified Payout |
   | **1 Free Spin** | 2% | 9,300 – 9,499 | `FREE_SPIN` | Instant Credit (+1 Spin) |
   | **Try Your Luck** | 5% | 9,500 – 9,999 | `TRY_YOUR_LUCK` | None |
-- Every spin receives a unique, auditable ID (e.g., `SPIN-1718293-A8F2`) with 256-bit cryptographic seed.
+- Every spin receives a unique ID and the selected random roll/outcome are stored in the administrative spin history. This does not make the centralized randomness independently verifiable.
 
 ### D. Manual USDT Payout Pipeline
 1. User spins the prize wheel.
@@ -90,18 +90,9 @@ Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainl
 
 ---
 
-## 3. Verified Contract Addresses
+## 3. Deployment Addresses
 
-| Contract | Network | Address |
-|---|---|---|
-| **AgentLegendsNFT** | BSC Testnet (97) | `0x446B233261765c71a396faeE1a9420b99fa51829` |
-| **AgentLegendsStaking** | BSC Testnet (97) | `0x2B1A6a17b2bC0cfaEea538fC0Fcf88927b233a00` |
-| **Official BSC-USD (USDT)** | BSC Testnet (97) | `0x337610d27c682E347C9cD60BD4b3b107C9d34dDd` (18 Decimals) |
-| **Chainlink BNB/USD Feed** | BSC Testnet (97) | `0x2514895c78B50853799fB792454453076C104B06` (8 Decimals) |
-| **AgentLegendsNFT** | BSC Mainnet (56) | `0x89D22fBeDdB1A8c61e4796B07DE2592518eE4F32` |
-| **AgentLegendsStaking** | BSC Mainnet (56) | `0x53D8330cfdE0e633d62325E67a8ff17f7300c3b8` |
-| **Official Binance-Peg USDT**| BSC Mainnet (56) | `0x55d398326f99059fF775485246999027B3197955` (18 Decimals) |
-| **Chainlink BNB/USD Feed** | BSC Mainnet (56) | `0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE` (8 Decimals) |
+No Agent Legends NFT or staking contract address is hard-coded as a deployed production contract. Populate the matching `NEXT_PUBLIC_*_NFT_ADDRESS` and `NEXT_PUBLIC_*_STAKING_ADDRESS` values from a verified testnet deployment. Do not configure mainnet addresses until the testnet deployment, security review, and reserve/payout operations have been verified.
 
 ---
 
@@ -110,7 +101,7 @@ Agent Legends 2.0 combines decentralized ERC-721 token mechanics, dynamic Chainl
 ### Prerequisites
 - Node.js v20+ / v22+
 - npm or pnpm
-- PostgreSQL (or local fallback store)
+- PostgreSQL
 
 ### Installation
 ```bash
@@ -130,7 +121,9 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Fill in your `PRIVATE_KEY`, `BSCSCAN_API_KEY`, and `DATABASE_URL`.
+Set `DATABASE_URL`, `BSC_CHAIN_ID`, `ADMIN_WALLETS`, `NEXT_PUBLIC_ADMIN_WALLETS`, and a randomly generated `ADMIN_SESSION_SECRET` of at least 32 characters. Keep the signing key out of source control. Configure the relevant chain contract addresses after deployment.
+
+For local development, apply the schema with `npx prisma db push`. For a new production database, review the checked-in initial migration and apply it with `npx prisma migrate deploy`; do not use `db push` against production.
 
 ### Run Development Server
 ```bash
@@ -164,7 +157,11 @@ The test suite validates:
 npx hardhat run scripts/deploy.ts --network bscTestnet
 ```
 
-### Deploy to BSC Mainnet
+### Mainnet deployment
+
+Mainnet deployment is intentionally not a routine quick-start step. First deploy to BSC testnet, verify contract source and feed/token addresses, exercise mint/stake/referral/spin/payout flows, and complete an independent security review. Do not run a mainnet deployment until those checks and operational approvals are complete.
+
+### Deploy to BSC Mainnet (only after the required reviews)
 ```bash
 npx hardhat run scripts/deploy.ts --network bscMainnet
 ```
@@ -190,4 +187,3 @@ npx hardhat verify --network bscTestnet <STAKING_CONTRACT_ADDRESS> "<OWNER_ADDRE
 
 ## 7. License
 MIT License. Developed for the Agent Legends 2.0 Web3 Ecosystem.
-

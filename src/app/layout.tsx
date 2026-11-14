@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Agent Legends 2.0 | NFT Minting, 72h Staking & Spin-to-Earn on BNB Chain",
   description:
-    "Production-grade Web3 cyberpunk platform on BNB Smart Chain. 10,000 Max Supply, $0.20 BNB Mint via Chainlink Oracle, 72h Staking Custody, Backend CSPRNG Prize Wheel, and Manual Verified USDT Payouts.",
+    "Web3 platform in development for NFT minting, 72-hour staking, backend-randomized spins, and manually verified USDT payouts on BNB Smart Chain.",
   keywords: [
     "Agent Legends",
     "BNB Chain",
@@ -38,4 +38,3 @@ export default function RootLayout({
     </html>
   );
 }
-

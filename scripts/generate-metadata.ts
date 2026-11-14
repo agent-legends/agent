@@ -71,7 +71,10 @@ export function generateAllMetadata(count: number = 100, outputDir: string = "me
   console.log(`Successfully generated metadata for IDs 1 to ${count}`);
 }
 
-// Run generator
-generateAllMetadata(100);
+const requestedCount = Number(process.argv[2] ?? "10000");
+if (!Number.isInteger(requestedCount) || requestedCount < 1 || requestedCount > 10_000) {
+  throw new Error("Metadata count must be an integer between 1 and 10,000.");
+}
 
+generateAllMetadata(requestedCount);
 

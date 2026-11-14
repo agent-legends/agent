@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useChainId,
+} from "wagmi";
 import { Users, Copy, Check, Gift, Crown, Trophy, Sparkles, ExternalLink, AlertCircle } from "lucide-react";
 import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI } from "@/config/contracts";
+import { bsc, bscTestnet } from "wagmi/chains";
 
 interface ReferralUserStats {
   walletAddress: string;
@@ -31,22 +37,32 @@ export function ReferralSection() {
   const [stats, setStats] = useState<ReferralUserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [syncedHash, setSyncedHash] = useState<string | null>(null);
 
   const activeContractConfig =
-    CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || CONTRACT_ADDRESSES[97];
+    chainId === 56 ? CONTRACT_ADDRESSES[56] : chainId === 97 ? CONTRACT_ADDRESSES[97] : null;
 
-  const { data: hash, isPending: isClaimPending, writeContract } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const { data: hash, isPending: isClaimPending, writeContractAsync } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+    confirmations: 3,
+  });
 
   const fetchReferralData = () => {
     const url = address ? `/api/referrals?wallet=${address}` : "/api/referrals";
     fetch(url)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Referral data could not be loaded.");
+        return data;
+      })
       .then((data) => {
         if (data.userStats) setStats(data.userStats);
         if (data.leaderboard) setLeaderboard(data.leaderboard);
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        setClaimError(error instanceof Error ? error.message : "Referral data could not be loaded.");
+      });
   };
 
   useEffect(() => {
@@ -54,10 +70,22 @@ export function ReferralSection() {
   }, [address]);
 
   useEffect(() => {
-    if (isConfirmed) {
-      fetchReferralData();
-    }
-  }, [isConfirmed]);
+    if (!isConfirmed || !hash || !address || syncedHash === hash) return;
+    setSyncedHash(hash);
+    fetch("/api/referrals/claim/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: address, txHash: hash }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Referral claim could not be synchronized.");
+        await fetchReferralData();
+      })
+      .catch((error: unknown) => {
+        setClaimError(error instanceof Error ? error.message : "Referral claim could not be synchronized.");
+      });
+  }, [isConfirmed, hash, address, syncedHash]);
 
   const referralUrl = address
     ? `https://agentlegends.xyz/?ref=${address}`
@@ -69,12 +97,18 @@ export function ReferralSection() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleClaimFreeNft = () => {
+  const handleClaimFreeNft = async () => {
     if (!stats || stats.unclaimedFreeNfts <= 0) return;
+    if (!address || !activeContractConfig) {
+      setClaimError("Connect a wallet on BNB Smart Chain to claim.");
+      return;
+    }
     setClaimError(null);
     try {
-      (writeContract as any)({
+      await writeContractAsync({
         address: activeContractConfig.nft as `0x${string}`,
+        account: address,
+        chain: chainId === 56 ? bsc : bscTestnet,
         abi: AGENT_LEGENDS_NFT_ABI,
         functionName: "claimReferralRewards",
         args: [BigInt(1)],
@@ -269,4 +303,3 @@ export function ReferralSection() {
     </div>
   );
 }
-

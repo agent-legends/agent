@@ -1,4 +1,9 @@
-import { createPublicClient, http, decodeEventLog, parseAbiItem } from "viem";
+import {
+  createPublicClient,
+  http,
+  parseAbiItem,
+  parseUnits,
+} from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
@@ -14,115 +19,63 @@ export interface PayoutVerificationResult {
 const TRANSFER_EVENT_ABI = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)"
 );
+const MIN_CONFIRMATIONS = 3n;
 
-/**
- * Verifies an on-chain BSC USDT payout transaction
- * Ensures:
- * 1. Transaction exists and was successfully confirmed on-chain
- * 2. Contract called was the official USDT token contract
- * 3. ERC20 Transfer event sent USDT to the expected winner wallet
- * 4. Transferred amount matches the expected reward amount in USDT (accounting for 18 decimals)
- */
 export async function verifyUsdtPayoutTransaction(
-  txHash: string,
-  expectedWinnerWallet: string,
+  txHash: `0x${string}`,
+  expectedWinnerWallet: `0x${string}`,
   expectedAmountUsdt: number,
-  chainId: number = 97
+  chainId: 56 | 97
 ): Promise<PayoutVerificationResult> {
+  const config = CONTRACT_ADDRESSES[chainId];
+  const client = createPublicClient({
+    chain: chainId === 56 ? bsc : bscTestnet,
+    transport: http(config.rpcUrl),
+  });
+
   try {
-    const chainConfig =
-      chainId === 56 ? bsc : chainId === 97 ? bscTestnet : bscTestnet;
-    const rpcUrl =
-      chainId === 56
-        ? CONTRACT_ADDRESSES[56].rpcUrl
-        : CONTRACT_ADDRESSES[97].rpcUrl;
-    const expectedUsdtAddress = (
-      chainId === 56
-        ? CONTRACT_ADDRESSES[56].usdt
-        : CONTRACT_ADDRESSES[97].usdt
-    ).toLowerCase();
-
-    const client = createPublicClient({
-      chain: chainConfig,
-      transport: http(rpcUrl),
-    });
-
-    const receipt = await client.getTransactionReceipt({
-      hash: txHash as `0x${string}`,
-    });
-
-    if (!receipt) {
-      return { isValid: false, error: "Transaction receipt not found on BNB Chain." };
-    }
-
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") {
       return { isValid: false, error: "Transaction reverted on BNB Smart Chain." };
     }
 
-    // Inspect logs for USDT Transfer event
-    const normalizedExpectedRecipient = expectedWinnerWallet.toLowerCase();
-    let verifiedTransferFound = false;
-    let actualTransferredAmountUsdt = 0;
-    let actualSender = "";
-    let actualRecipient = "";
-
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() === expectedUsdtAddress) {
-        try {
-          const rawLog = log as any;
-          const decoded: any = decodeEventLog({
-            abi: [TRANSFER_EVENT_ABI],
-            data: rawLog.data,
-            topics: rawLog.topics,
-          });
-
-          if (decoded.eventName === "Transfer") {
-            const from = (decoded.args?.from || "").toLowerCase();
-            const to = (decoded.args?.to || "").toLowerCase();
-            const value = decoded.args?.value ? BigInt(decoded.args.value) : 0n;
-
-            // 18 decimals for BSC-USD / BSC Testnet USDT
-            const transferredUsdt = Number(value) / 1e18;
-
-            if (to === normalizedExpectedRecipient) {
-              actualSender = from;
-              actualRecipient = to;
-              actualTransferredAmountUsdt = transferredUsdt;
-
-              // Check amount tolerance (must be within 0.0001 USDT of expected reward)
-              if (Math.abs(transferredUsdt - expectedAmountUsdt) < 0.0001) {
-                verifiedTransferFound = true;
-                break;
-              }
-            }
-          }
-        } catch {
-          // Log was not a Transfer event on this contract
-          continue;
-        }
-      }
+    const latestBlock = await client.getBlockNumber();
+    if (latestBlock - receipt.blockNumber + 1n < MIN_CONFIRMATIONS) {
+      return { isValid: false, error: "Transaction is awaiting required BNB Chain confirmations." };
     }
 
-    if (!verifiedTransferFound) {
+    const tokenAddress = config.usdt.toLowerCase();
+    const expectedRecipient = expectedWinnerWallet.toLowerCase();
+    const expectedAmountRaw = parseUnits(expectedAmountUsdt.toFixed(2), config.usdtDecimals);
+    const blockTransfers = await client.getLogs({
+      address: config.usdt as `0x${string}`,
+      event: TRANSFER_EVENT_ABI,
+      fromBlock: receipt.blockNumber,
+      toBlock: receipt.blockNumber,
+    });
+    const matchingTransfers = blockTransfers.filter(
+      (log) =>
+        log.transactionHash.toLowerCase() === txHash.toLowerCase() &&
+        log.args.to.toLowerCase() === expectedRecipient
+    );
+    const transferredToWinner = matchingTransfers.reduce((sum, log) => sum + log.args.value, 0n);
+
+    if (matchingTransfers.length !== 1 || transferredToWinner !== expectedAmountRaw) {
       return {
         isValid: false,
-        error: `No matching Transfer event found on USDT contract (${expectedUsdtAddress}) to winner ${expectedWinnerWallet} for ${expectedAmountUsdt} USDT. Found recipient: ${actualRecipient}, amount: ${actualTransferredAmountUsdt} USDT.`,
+        error: `Expected one ${expectedAmountUsdt.toFixed(2)} USDT transfer to ${expectedWinnerWallet} from the configured token contract; found ${matchingTransfers} transfer(s).`,
       };
     }
 
     return {
       isValid: true,
       blockNumber: receipt.blockNumber,
-      sender: actualSender,
-      recipient: actualRecipient,
-      transferredAmountUsdt: actualTransferredAmountUsdt,
+      sender: matchingTransfers[0].args.from,
+      recipient: expectedRecipient,
+      transferredAmountUsdt: expectedAmountUsdt,
     };
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    return {
-      isValid: false,
-      error: `Blockchain verification failed: ${errorMsg}`,
-    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown blockchain verification error.";
+    return { isValid: false, error: `BNB Chain verification failed: ${message}` };
   }
 }
-

@@ -223,7 +223,7 @@ export default function HomePage() {
             Spin-to-Earn Bounty Wheel
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Every spin credit gives you a roll on the prize wheel with real USDT payouts. Outcomes are determined on the backend with Node.js cryptographic randomness (CSPRNG) and tracked in an immutable audit ledger.
+            Every spin credit gives you a roll on the prize wheel with USDT rewards. Outcomes are determined by centralized backend cryptographic randomness (CSPRNG), are not independently verifiable VRF results, and are recorded in the admin audit history.
           </p>
           <Link
             href="/spin"
@@ -256,4 +256,3 @@ export default function HomePage() {
     </div>
   );
 }
-

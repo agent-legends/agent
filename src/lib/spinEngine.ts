@@ -103,7 +103,6 @@ export interface SpinResult {
   rewardAmountUsdt: number;
   isFreeSpinAwarded: boolean;
   randomNumber: number;
-  randomSeed: string;
   isWinner: boolean;
   timestamp: string;
   requiresPayout: boolean;
@@ -116,7 +115,6 @@ export interface SpinResult {
 export function executeSecureBackendSpin(walletAddress: string): SpinResult {
   // Generate random roll between 0 and 9999 inclusive using CSPRNG
   const randomNumber = crypto.randomInt(0, 10000);
-  const randomSeed = crypto.randomBytes(32).toString("hex");
 
   // Determine reward config
   const matched = SPIN_REWARDS.find(
@@ -139,10 +137,8 @@ export function executeSecureBackendSpin(walletAddress: string): SpinResult {
     rewardAmountUsdt: matched.usdtAmount,
     isFreeSpinAwarded: matched.isFreeSpin,
     randomNumber,
-    randomSeed,
     isWinner,
     timestamp,
     requiresPayout: isWinner,
   };
 }
-

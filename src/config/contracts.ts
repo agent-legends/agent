@@ -1,8 +1,8 @@
 export const CONTRACT_ADDRESSES = {
   // BSC Mainnet (Chain ID: 56)
   56: {
-    nft: process.env.NEXT_PUBLIC_MAINNET_NFT_ADDRESS || "0x89D22fBeDdB1A8c61e4796B07DE2592518eE4F32",
-    staking: process.env.NEXT_PUBLIC_MAINNET_STAKING_ADDRESS || "0x53D8330cfdE0e633d62325E67a8ff17f7300c3b8",
+    nft: process.env.NEXT_PUBLIC_MAINNET_NFT_ADDRESS || "",
+    staking: process.env.NEXT_PUBLIC_MAINNET_STAKING_ADDRESS || "",
     usdt: "0x55d398326f99059fF775485246999027B3197955", // Official Binance-Peg BSC-USD (USDT)
     usdtDecimals: 18,
     chainlinkBnbUsd: "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
@@ -11,8 +11,8 @@ export const CONTRACT_ADDRESSES = {
   },
   // BSC Testnet (Chain ID: 97)
   97: {
-    nft: process.env.NEXT_PUBLIC_TESTNET_NFT_ADDRESS || "0x446B233261765c71a396faeE1a9420b99fa51829",
-    staking: process.env.NEXT_PUBLIC_TESTNET_STAKING_ADDRESS || "0x2B1A6a17b2bC0cfaEea538fC0Fcf88927b233a00",
+    nft: process.env.NEXT_PUBLIC_TESTNET_NFT_ADDRESS || "",
+    staking: process.env.NEXT_PUBLIC_TESTNET_STAKING_ADDRESS || "",
     usdt: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd", // BSC Testnet USDT
     usdtDecimals: 18,
     chainlinkBnbUsd: "0x2514895c78B50853799fB792454453076C104B06",
@@ -299,4 +299,3 @@ export const ERC20_ABI = [
     outputs: [{ name: "", type: "uint8" }],
   },
 ] as const;
-

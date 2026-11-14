@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 import confetti from "canvas-confetti";
 import { Disc3, Sparkles, AlertCircle, ShieldAlert, CheckCircle2, Clock, Volume2, VolumeX } from "lucide-react";
+import { createSpinMessage } from "@/lib/authMessages";
 
 interface SpinResultData {
   spinId: string;
@@ -12,8 +13,6 @@ interface SpinResultData {
   label: string;
   rewardAmountUsdt: number;
   isFreeSpinAwarded: boolean;
-  randomNumber: number;
-  randomSeed: string;
   isWinner: boolean;
   timestamp: string;
   requiresPayout: boolean;
@@ -31,6 +30,7 @@ const WHEEL_SECTORS = [
 
 export function SpinWheel() {
   const { isConnected, address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const [availableSpins, setAvailableSpins] = useState<number>(0);
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
   const [rotationAngle, setRotationAngle] = useState<number>(0);
@@ -125,11 +125,17 @@ export function SpinWheel() {
     setIsSpinning(true);
 
     try {
-      // 1. Request cryptographically secure backend spin result
+      const requestId = crypto.randomUUID();
+      const timestamp = Date.now();
+      const signature = await signMessageAsync({
+        account: address,
+        message: createSpinMessage(address, timestamp, requestId),
+      });
+
       const res = await fetch("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: address }),
+        body: JSON.stringify({ walletAddress: address, requestId, timestamp, signature }),
       });
 
       const data = await res.json();
@@ -148,7 +154,7 @@ export function SpinWheel() {
       // Pointer is fixed at top (0 degrees).
       // To have sectorIndex land under the top pointer:
       // target rotation = full rotations + (360 - (sectorIndex * sectorAngle + sectorAngle / 2))
-      const extraFullSpins = 5 + Math.floor(Math.random() * 3); // 5 to 7 full rotations
+      const extraFullSpins = 5;
       const targetSectorAngle = 360 - (sectorIndex * sectorAngle + sectorAngle / 2);
       const currentRotationMod = rotationAngle % 360;
       const additionalDegrees = extraFullSpins * 360 + (targetSectorAngle - currentRotationMod + 360) % 360;
@@ -200,7 +206,7 @@ export function SpinWheel() {
         <div className="flex items-center space-x-2">
           <ShieldAlert className="w-4 h-4 text-[#00E5FF] flex-shrink-0" />
           <span>
-            Server-side CSPRNG Randomness: Winning outcomes are determined securely on the backend and verified on BNB Chain.
+            Centralized backend CSPRNG: results are not independently verifiable VRF outcomes. Only USDT payouts are verified on BNB Chain.
           </span>
         </div>
         <button
@@ -385,8 +391,8 @@ export function SpinWheel() {
                   <span className="text-slate-200">{latestResult.spinId}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Random Roll Proof:</span>
-                  <span className="text-[#00FF66]">#{latestResult.randomNumber} / 9999</span>
+                  <span>Randomness:</span>
+                  <span className="text-[#00FF66]">Backend CSPRNG (not VRF)</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Payout Status:</span>
@@ -470,4 +476,3 @@ export function SpinWheel() {
     </div>
   );
 }
-

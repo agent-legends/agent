@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
-import { parseEther, isAddress } from "viem";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useChainId,
+  useReadContract,
+} from "wagmi";
+import { formatEther, isAddress } from "viem";
 import { useSearchParams } from "next/navigation";
 import { Sparkles, Shield, AlertCircle, CheckCircle2, ExternalLink, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI } from "@/config/contracts";
@@ -14,9 +20,10 @@ export function MintSection() {
 
   const [quantity, setQuantity] = useState<number>(1);
   const [referrer, setReferrer] = useState<string>("");
-  const [estimatedBnbCost, setEstimatedBnbCost] = useState<string>("0.00033");
-  const [bnbPriceUsd] = useState<number>(605.5);
   const [referrerError, setReferrerError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncedHash, setSyncedHash] = useState<string | null>(null);
 
   // Read referrer from URL if present
   useEffect(() => {
@@ -26,22 +33,48 @@ export function MintSection() {
     }
   }, [searchParams]);
 
-  // Compute unit price in BNB for $0.20 USD
-  const unitBnb = 0.20 / bnbPriceUsd; // ~0.00033 BNB
-  const totalBnb = (unitBnb * quantity).toFixed(6);
-
-  useEffect(() => {
-    setEstimatedBnbCost(totalBnb);
-  }, [quantity, totalBnb]);
-
   const activeContractConfig =
-    CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || CONTRACT_ADDRESSES[97];
+    chainId === 56 ? CONTRACT_ADDRESSES[56] : chainId === 97 ? CONTRACT_ADDRESSES[97] : null;
+  const nftAddress =
+    activeContractConfig && isAddress(activeContractConfig.nft)
+      ? (activeContractConfig.nft as `0x${string}`)
+      : undefined;
+  const { data: unitPriceWei, isLoading: isPriceLoading, error: priceError } = useReadContract({
+    address: nftAddress,
+    abi: AGENT_LEGENDS_NFT_ABI,
+    functionName: "getMintPriceInWei",
+    query: { enabled: Boolean(nftAddress) },
+  });
 
   const { data: hash, isPending: isMintPending, error: mintError, writeContract } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
+    confirmations: 3,
   });
+
+  const totalPriceWei = unitPriceWei ? unitPriceWei * BigInt(quantity) : undefined;
+  const totalBnb = totalPriceWei ? formatEther(totalPriceWei) : null;
+
+  useEffect(() => {
+    if (!isConfirmed || !hash || !address || syncedHash === hash) return;
+    setSyncedHash(hash);
+    setSyncMessage(null);
+    setSyncError(null);
+    fetch("/api/mint/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: address, txHash: hash }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Mint record could not be synchronized.");
+        setSyncMessage("Mint and referral records have been synchronized.");
+      })
+      .catch((error: unknown) => {
+        setSyncError(error instanceof Error ? error.message : "Mint record could not be synchronized.");
+      });
+  }, [isConfirmed, hash, address, syncedHash]);
 
   const handleReferrerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.trim();
@@ -57,20 +90,24 @@ export function MintSection() {
 
   const handleMint = async () => {
     if (!isConnected) return;
+    if (!activeContractConfig || !nftAddress || !unitPriceWei || !totalPriceWei) {
+      setReferrerError(
+        priceError?.message || "A supported BNB Chain and a configured NFT contract are required."
+      );
+      return;
+    }
     if (referrer && (!isAddress(referrer) || referrer.toLowerCase() === address?.toLowerCase())) {
       setReferrerError("Please enter a valid, non-self referrer address or leave empty.");
       return;
     }
 
     const effectiveReferrer = referrer && isAddress(referrer) ? (referrer as `0x${string}`) : "0x0000000000000000000000000000000000000000";
-    const paymentWei = parseEther(totalBnb);
-
     (writeContract as any)({
-      address: activeContractConfig.nft as `0x${string}`,
+      address: nftAddress,
       abi: AGENT_LEGENDS_NFT_ABI,
       functionName: "mint",
       args: [BigInt(quantity), effectiveReferrer],
-      value: paymentWei,
+      value: totalPriceWei,
     });
   };
 
@@ -87,7 +124,7 @@ export function MintSection() {
             Recruit Tactical Agents
           </h2>
           <p className="text-xs text-slate-400">
-            Chainlink-verified dynamic mint price: $0.20 USD equivalent in BNB.
+            The contract reads the current Chainlink BNB/USD feed for the $0.20 USD-equivalent mint price.
           </p>
         </div>
 
@@ -161,7 +198,9 @@ export function MintSection() {
         <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800/80 space-y-2 text-xs font-mono">
           <div className="flex justify-between text-slate-400">
             <span>Price per NFT:</span>
-            <span className="text-white font-bold">$0.20 USD (≈ {unitBnb.toFixed(6)} BNB)</span>
+            <span className="text-white font-bold">
+              {unitPriceWei ? `$0.20 USD (${formatEther(unitPriceWei)} BNB)` : "Oracle quote unavailable"}
+            </span>
           </div>
           <div className="flex justify-between text-slate-400">
             <span>Quantity:</span>
@@ -170,7 +209,9 @@ export function MintSection() {
           <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline">
             <span className="text-slate-300 font-bold uppercase">Total Cost:</span>
             <div className="text-right">
-              <span className="text-lg font-black text-[#00FF66]">{totalBnb} BNB</span>
+              <span className="text-lg font-black text-[#00FF66]">
+                {totalBnb ? `${totalBnb} BNB` : isPriceLoading ? "Loading oracle quote..." : "Unavailable"}
+              </span>
               <span className="block text-[10px] text-slate-500 font-normal">
                 (${(quantity * 0.20).toFixed(2)} USD)
               </span>
@@ -181,7 +222,7 @@ export function MintSection() {
         {/* Mint Button */}
         <button
           onClick={handleMint}
-          disabled={!isConnected || isMintPending || isConfirming}
+          disabled={!isConnected || !totalPriceWei || isMintPending || isConfirming}
           className={`w-full py-4 rounded-2xl font-black font-mono tracking-wider uppercase text-sm transition-all flex items-center justify-center space-x-2 ${
             !isConnected
               ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
@@ -198,7 +239,9 @@ export function MintSection() {
               ? "Confirm in Wallet..."
               : isConfirming
               ? "Recruiting on BNB Chain..."
-              : `Mint ${quantity} Agent${quantity > 1 ? "s" : ""} (${totalBnb} BNB)`}
+              : totalBnb
+              ? `Mint ${quantity} Agent${quantity > 1 ? "s" : ""} (${totalBnb} BNB)`
+              : "Oracle Quote Unavailable"}
           </span>
         </button>
 
@@ -215,15 +258,20 @@ export function MintSection() {
             </span>
           </div>
         )}
+        {syncError && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
+            Mint succeeded on-chain, but dashboard indexing failed: {syncError}. Retry the transaction sync before relying on referral statistics.
+          </div>
+        )}
 
-        {isConfirmed && hash && (
+        {isConfirmed && hash && activeContractConfig && (
           <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 text-xs space-y-2">
             <div className="flex items-center space-x-2 font-bold font-mono">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Recruitment Confirmed on BNB Smart Chain!</span>
             </div>
             <p className="text-slate-300">
-              Successfully minted {quantity} Agent Legends NFT{quantity > 1 ? "s" : ""}. You can stake your operatives immediately to generate spin credits!
+              Successfully minted {quantity} Agent Legends NFT{quantity > 1 ? "s" : ""}. {syncMessage || "Synchronizing referral and dashboard records..."}
             </p>
             <a
               href={`${activeContractConfig.explorer}/tx/${hash}`}
@@ -240,4 +288,3 @@ export function MintSection() {
     </div>
   );
 }
-
