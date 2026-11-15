@@ -13,7 +13,7 @@ export default function DocsPage() {
       <PageIntro
         eyebrow="Documentation"
         title="Protocol guide"
-        description="Understand the collection, smart contract rules, spin probabilities, referral milestones, and payout verification."
+        description="Learn about the collection, staking, spin credits, referrals, and reward tracking."
         icon={FileText}
       />
 
@@ -22,17 +22,15 @@ export default function DocsPage() {
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Code2 className="w-5 h-5 text-[#00FF66]" />
-            <span>1. System Architecture & Technology Stack</span>
+            <span>1. Platform Overview</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends 2.0 targets BNB Smart Chain with a hybrid on-chain / off-chain design. Contracts and services must be independently reviewed and configured before production use.
+              Agent Legends is a BNB Smart Chain collection with NFT minting, staking, spin credits, community referrals, and reward tracking.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
-            <li><strong className="text-white">Smart Contracts:</strong> Solidity 0.8.24 with OpenZeppelin Contracts 5.x (ERC721Enumerable, Ownable2Step, Pausable, ReentrancyGuard).</li>
-            <li><strong className="text-white">Price Feed Oracle:</strong> Chainlink BNB/USD Aggregator with strict price validation and 3-hour staleness checks.</li>
-            <li><strong className="text-white">Staking Custody:</strong> Safe ERC-721 custody with an immutable 72-hour lock timer per staked NFT.</li>
-            <li><strong className="text-white">Randomness Engine:</strong> Server-side cryptographically secure random number generation. Outcomes are centralized and cannot be independently verified as VRF results.</li>
-            <li><strong className="text-white">Frontend Web3:</strong> Next.js 15 App Router, Wagmi v2, Viem 2.x, RainbowKit, Tailwind CSS, Framer Motion.</li>
+              <li><strong className="text-white">Network:</strong> BNB Smart Chain.</li>
+              <li><strong className="text-white">Staking:</strong> A 72-hour minimum lock applies to staked NFTs.</li>
+              <li><strong className="text-white">Rewards:</strong> Spin results and payout updates are available in your account.</li>
           </ul>
         </section>
 
@@ -64,7 +62,7 @@ export default function DocsPage() {
               • <strong className="text-white">Minimum Staking Duration:</strong> Staked NFTs are held in custody for a mandatory minimum of 72 hours. Early unstaking attempts revert with <code>StakingLocked()</code>.
             </p>
             <p>
-              • <strong className="text-white">Single Initial Spin Rule:</strong> Every NFT generates exactly 1 initial spin credit on its first successful stake (tracked via <code>hasGeneratedInitialSpin[tokenId]</code>). Restaking an already-staked NFT will <strong className="text-amber-300">never duplicate an initial spin credit</strong>.
+              • <strong className="text-white">Single Initial Spin Rule:</strong> Every NFT grants one spin credit on its first successful stake. Restaking that NFT does not grant another initial credit.
             </p>
             <p>
               • <strong className="text-white">Credit Preservation:</strong> Unstaking an operative does not burn or deduct unused spin credits.
@@ -72,89 +70,66 @@ export default function DocsPage() {
           </div>
         </section>
 
-        {/* 4. Spin & Earn Reward Distribution */}
+        {/* 4. Spin & Earn Rewards */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Disc3 className="w-5 h-5 text-[#00FF66]" />
-            <span>4. Spin & Earn Probability Distribution</span>
+            <span>4. Spin & Earn Rewards</span>
           </div>
           <p className="text-slate-300">
-            Outcomes are resolved using Node.js <code>crypto.randomInt(0, 10000)</code> across 10,000 basis points:
+            The wheel includes USDT prizes, an extra spin credit, and a try-again outcome. View your result and payout status on the Spin and Rewards pages.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left border border-slate-800 rounded-xl overflow-hidden">
               <thead className="bg-slate-950 text-slate-400">
                 <tr>
                   <th className="p-3">Reward Outcome</th>
-                  <th className="p-3">Probability</th>
-                  <th className="p-3">Roll Range (out of 10,000)</th>
-                  <th className="p-3">Fulfillment</th>
+                  <th className="p-3">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 bg-slate-900/40">
                 <tr>
                   <td className="p-3 text-white font-bold">$0.10 USDT</td>
-                  <td className="p-3 text-[#00FF66]">80%</td>
-                  <td className="p-3 text-slate-400">0 – 7,999</td>
-                  <td className="p-3 text-amber-300">Manual Admin Payout</td>
+                  <td className="p-3 text-slate-300">USDT prize</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-white font-bold">$0.20 USDT</td>
-                  <td className="p-3 text-[#00E5FF]">10%</td>
-                  <td className="p-3 text-slate-400">8,000 – 8,999</td>
-                  <td className="p-3 text-amber-300">Manual Admin Payout</td>
+                  <td className="p-3 text-slate-300">USDT prize</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-white font-bold">$0.50 USDT</td>
-                  <td className="p-3 text-purple-400">1%</td>
-                  <td className="p-3 text-slate-400">9,000 – 9,099</td>
-                  <td className="p-3 text-amber-300">Manual Admin Payout</td>
+                  <td className="p-3 text-slate-300">USDT prize</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-white font-bold">$0.70 USDT</td>
-                  <td className="p-3 text-pink-400">1%</td>
-                  <td className="p-3 text-slate-400">9,100 – 9,199</td>
-                  <td className="p-3 text-amber-300">Manual Admin Payout</td>
+                  <td className="p-3 text-slate-300">USDT prize</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-white font-bold">$1.00 USDT</td>
-                  <td className="p-3 text-amber-400">1%</td>
-                  <td className="p-3 text-slate-400">9,200 – 9,299</td>
-                  <td className="p-3 text-amber-300">Manual Admin Payout</td>
+                  <td className="p-3 text-slate-300">USDT prize</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-white font-bold">1 Free Spin</td>
-                  <td className="p-3 text-blue-400">2%</td>
-                  <td className="p-3 text-slate-400">9,300 – 9,499</td>
-                  <td className="p-3 text-emerald-400">Instant Credit (+1 Spin)</td>
+                  <td className="p-3 text-emerald-400">Adds one spin credit</td>
                 </tr>
                 <tr>
                   <td className="p-3 text-slate-400 font-bold">Try Your Luck</td>
-                  <td className="p-3 text-slate-500">5%</td>
-                  <td className="p-3 text-slate-400">9,500 – 9,999</td>
-                  <td className="p-3 text-slate-500">None</td>
+                  <td className="p-3 text-slate-500">No prize on this spin</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        {/* 5. Manual USDT Payout Workflow */}
+        {/* 5. USDT Reward Status */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Award className="w-5 h-5 text-amber-400" />
-            <span>5. Manual USDT Payout & On-Chain Verification Pipeline</span>
+            <span>5. USDT Reward Status</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            All winning outcomes are processed under strict manual oversight to ensure solvency and prevent algorithmic exploitation:
+            USDT prizes appear in your Rewards history. Payout status updates after the corresponding BNB Smart Chain transfer is confirmed.
           </p>
-          <ol className="list-decimal pl-5 space-y-2 text-slate-400">
-            <li>User spins and server saves outcome as <code>PENDING</code>.</li>
-            <li>Reward appears in the private wallet-authorized admin dashboard.</li>
-            <li>Admin transfers USDT using the official BSC USDT contract.</li>
-            <li>Admin submits the resulting transaction hash into the payout verification engine.</li>
-            <li>Backend queries BNB Smart Chain RPC, verifies receipt status, confirms transfer event amount and recipient, and marks reward as <code>PAID</code>.</li>
-          </ol>
         </section>
 
         {/* 6. Referral Protocol */}

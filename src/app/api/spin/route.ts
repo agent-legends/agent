@@ -95,8 +95,6 @@ export async function POST(req: NextRequest) {
         success: true,
         spin: publicSpin(previousSpin),
         remainingSpins: user?.availableSpins ?? 0,
-        notice:
-          "Outcomes use centralized backend CSPRNG randomness and are not independently verifiable VRF results.",
       });
     }
 
@@ -168,8 +166,6 @@ export async function POST(req: NextRequest) {
       success: true,
       spin: publicSpin(spin),
       remainingSpins: updatedUser.availableSpins,
-      notice:
-        "Outcomes use centralized backend CSPRNG randomness and are not independently verifiable VRF results.",
     });
   } catch (error) {
     if (error instanceof NoSpinCreditsError) {
@@ -187,8 +183,6 @@ export async function POST(req: NextRequest) {
           success: true,
           spin: publicSpin(previousSpin),
           remainingSpins: user?.availableSpins ?? 0,
-          notice:
-            "Outcomes use centralized backend CSPRNG randomness and are not independently verifiable VRF results.",
         });
       }
       return NextResponse.json({ error: "Request ID has already been used." }, { status: 409 });

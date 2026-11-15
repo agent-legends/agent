@@ -4,7 +4,7 @@ import React from "react";
 import { SpinWheel } from "@/components/SpinWheel";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
-import { Disc3, ShieldAlert, Award, Clock } from "lucide-react";
+import { Disc3, Award } from "lucide-react";
 
 export default function SpinPage() {
   return (
@@ -14,34 +14,34 @@ export default function SpinPage() {
       <PageIntro
         eyebrow="Spin rewards"
         title="Use your spin credits"
-        description="Review the published odds, use credits earned from staking, and track your outcomes and payout status."
+        description="Use credits earned from staking, view your spin results, and track payout status."
         icon={Disc3}
       />
 
       <SpinWheel />
 
-      {/* Manual Payout Process Infographic */}
+      {/* Reward status overview */}
       <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
         <div className="flex items-center space-x-2 text-xs font-mono font-bold text-white uppercase">
           <Award className="w-4 h-4 text-amber-400" />
-          <span>Manual USDT Payout & On-Chain Verification Lifecycle</span>
+          <span>Reward status</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-mono">
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
             <span className="text-[#00FF66] font-bold">1. Spin Completed</span>
-            <p className="text-[11px] text-slate-400">Winning roll is resolved via CSPRNG and recorded in the audit database.</p>
+            <p className="text-[11px] text-slate-400">Your result appears when the spin finishes.</p>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-amber-300 font-bold">2. Admin Queue</span>
-            <p className="text-[11px] text-slate-400">Winning wallet appears in the admin payout dashboard as Pending.</p>
+            <span className="text-amber-300 font-bold">2. Reward Listed</span>
+            <p className="text-[11px] text-slate-400">USDT prizes appear in your Rewards history.</p>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-[#00E5FF] font-bold">3. USDT Transfer</span>
-            <p className="text-[11px] text-slate-400">Admin dispatches official BSC USDT to the winner and submits transaction hash.</p>
+            <span className="text-[#00E5FF] font-bold">3. Transfer Pending</span>
+            <p className="text-[11px] text-slate-400">Follow the payout status from your Rewards page.</p>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-emerald-400 font-bold">4. Verified Paid</span>
-            <p className="text-[11px] text-slate-400">Backend strictly verifies the BSC receipt and status updates to Paid.</p>
+            <span className="text-emerald-400 font-bold">4. Confirmed</span>
+            <p className="text-[11px] text-slate-400">The status updates after the BNB Smart Chain transfer is confirmed.</p>
           </div>
         </div>
       </div>

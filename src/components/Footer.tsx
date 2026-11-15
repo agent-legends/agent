@@ -12,10 +12,9 @@ export function Footer() {
         <aside className="site-footer-disclosure" aria-label="Platform disclosure">
           <AlertTriangle aria-hidden="true" />
           <p>
-            <strong>Prize transparency:</strong> Spin outcomes are selected by a
-            server-side random number generator and are not independently
-            verifiable VRF results. USDT prizes are dispatched manually and
-            marked paid only after the BNB Chain transfer is verified.
+            <strong>Reward information:</strong> Spin results are shown in your
+            history. USDT payout status updates after the BNB Chain transfer is
+            confirmed.
           </p>
         </aside>
 

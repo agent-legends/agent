@@ -35,7 +35,7 @@ const features = [
     icon: Disc3,
     title: "Use your spins",
     description:
-      "See the published prize probabilities and review each spin in your account history.",
+      "Use spin credits and review your results and payout status.",
     action: "Open the wheel",
   },
   {
@@ -147,9 +147,8 @@ export default function HomePage() {
         <div>
           <h2 id="transparency-heading">Know how rewards work</h2>
           <p>
-            Spin outcomes use server-side randomness and are not independently
-            verifiable VRF results. USDT prizes are dispatched manually; a
-            payout is marked paid only after its BNB Chain transfer is verified.
+            Review your spin results and track USDT payout status. Payouts are
+            marked complete after the BNB Chain transfer is confirmed.
           </p>
           <Link href="/rewards" className="home-feature-link">
             View your rewards <ArrowRight aria-hidden="true" />

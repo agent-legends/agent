@@ -40,7 +40,7 @@ export default function RewardsPage() {
       <PageIntro
         eyebrow="Reward history"
         title="USDT payouts"
-        description="Review prize-wheel earnings, pending administrative transfers, and verified BNB Smart Chain transaction receipts."
+        description="Review your USDT prizes, payout status, and confirmed BNB Smart Chain transactions."
         icon={Award}
       />
 
@@ -71,7 +71,7 @@ export default function RewardsPage() {
           <div className="text-2xl font-black text-amber-300 font-mono">
             ${Number(userData?.pendingPayoutUsdt ?? 0).toFixed(2)} USDT
           </div>
-          <span className="text-[11px] font-mono text-amber-400/80">In admin verification queue</span>
+          <span className="text-[11px] font-mono text-amber-400/80">Awaiting transfer</span>
         </div>
 
         {/* Verified Paid */}
@@ -93,7 +93,7 @@ export default function RewardsPage() {
         <div>
           <span className="font-bold text-white">Verified BNB Smart Chain USDT Contract:</span>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            Configured BNB Smart Chain USDT token contract: {chainConfig.usdt}. Decimals: {chainConfig.usdtDecimals}. The backend verifies the transfer before a payout changes to Paid.
+            BNB Smart Chain USDT token contract: {chainConfig.usdt}. Payout status changes to Paid after the transfer is confirmed on-chain.
           </p>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function RewardsPage() {
           <div className="flex items-center space-x-2 font-mono">
             <Clock className="w-5 h-5 text-[#00E5FF]" />
             <h3 className="text-lg font-bold text-white uppercase tracking-wider">
-              Payout Audit Ledger
+              Reward History
             </h3>
           </div>
           <span className="text-xs font-mono text-slate-500">Live Status</span>

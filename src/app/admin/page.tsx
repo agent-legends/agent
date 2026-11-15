@@ -587,7 +587,6 @@ export default function AdminPage() {
                 <tr className="border-b border-slate-800 text-slate-400">
                   <th className="pb-3">Spin ID</th>
                   <th className="pb-3">Player Wallet</th>
-                  <th className="pb-3">Random Roll</th>
                   <th className="pb-3">Outcome</th>
                   <th className="pb-3">USDT Reward</th>
                   <th className="pb-3 text-right">Timestamp</th>
@@ -598,7 +597,6 @@ export default function AdminPage() {
                   <tr key={s.spinId || idx} className="hover:bg-slate-900/40">
                     <td className="py-3 text-slate-300 font-bold">{s.spinId}</td>
                     <td className="py-3 text-white">{s.walletAddress}</td>
-                    <td className="py-3 text-[#00FF66]">#{s.randomNumber} / 9999</td>
                     <td className="py-3 text-slate-200">{s.label || s.outcome}</td>
                     <td className="py-3 text-amber-300 font-bold">
                       {s.rewardAmountUsdt > 0 ? `$${s.rewardAmountUsdt.toFixed(2)} USDT` : s.isFreeSpinAwarded ? "1 Free Spin" : "-"}
@@ -622,7 +620,7 @@ export default function AdminPage() {
           </h3>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs font-mono text-slate-300">
             <p>• Payout verification is locked: once status is Paid, records cannot be modified or deleted.</p>
-            <p>• Centralized CSPRNG outcomes are disclosed to players and recorded in the admin history; they are not independently verifiable VRF results.</p>
+            <p>• Review the reward amount and recipient before confirming a payout.</p>
             <p>• USDT transfers are matched against official BSC token transfer logs with 18 decimal precision.</p>
           </div>
           <div className="flex space-x-3">

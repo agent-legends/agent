@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import confetti from "canvas-confetti";
-import { Disc3, Sparkles, AlertCircle, ShieldAlert, CheckCircle2, Clock, Volume2, VolumeX } from "lucide-react";
+import { Disc3, AlertCircle, CheckCircle2, Clock, Volume2, VolumeX } from "lucide-react";
 import { createSpinMessage } from "@/lib/authMessages";
 
 interface SpinResultData {
@@ -19,13 +19,13 @@ interface SpinResultData {
 }
 
 const WHEEL_SECTORS = [
-  { id: "USD_0_10", label: "$0.10 USDT", odds: "80%", color: "#00FF66", textColor: "#07090E" },
-  { id: "USD_0_20", label: "$0.20 USDT", odds: "10%", color: "#00E5FF", textColor: "#07090E" },
-  { id: "USD_0_50", label: "$0.50 USDT", odds: "1%", color: "#9D4EDD", textColor: "#FFFFFF" },
-  { id: "USD_0_70", label: "$0.70 USDT", odds: "1%", color: "#FF007F", textColor: "#FFFFFF" },
-  { id: "USD_1_00", label: "$1.00 USDT", odds: "1%", color: "#FFB703", textColor: "#07090E" },
-  { id: "FREE_SPIN", label: "FREE SPIN", odds: "2%", color: "#3B82F6", textColor: "#FFFFFF" },
-  { id: "TRY_YOUR_LUCK", label: "TRY AGAIN", odds: "5%", color: "#1E293B", textColor: "#94A3B8" },
+  { id: "USD_0_10", label: "$0.10 USDT", color: "#00FF66", textColor: "#07090E" },
+  { id: "USD_0_20", label: "$0.20 USDT", color: "#00E5FF", textColor: "#07090E" },
+  { id: "USD_0_50", label: "$0.50 USDT", color: "#9D4EDD", textColor: "#FFFFFF" },
+  { id: "USD_0_70", label: "$0.70 USDT", color: "#FF007F", textColor: "#FFFFFF" },
+  { id: "USD_1_00", label: "$1.00 USDT", color: "#FFB703", textColor: "#07090E" },
+  { id: "FREE_SPIN", label: "FREE SPIN", color: "#3B82F6", textColor: "#FFFFFF" },
+  { id: "TRY_YOUR_LUCK", label: "TRY AGAIN", color: "#1E293B", textColor: "#94A3B8" },
 ];
 
 export function SpinWheel() {
@@ -201,12 +201,11 @@ export function SpinWheel() {
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Centralized Randomness Transparency Notice */}
+      {/* Reward information */}
       <div className="w-full max-w-2xl mb-8 p-3 rounded-xl bg-slate-900/80 border border-[#00FF66]/20 flex items-center justify-between text-xs text-slate-300">
         <div className="flex items-center space-x-2">
-          <ShieldAlert className="w-4 h-4 text-[#00E5FF] flex-shrink-0" />
           <span>
-            Centralized backend CSPRNG: results are not independently verifiable VRF outcomes. Only USDT payouts are verified on BNB Chain.
+            USDT payout status is updated after the transfer is confirmed on BNB Smart Chain.
           </span>
         </div>
         <button
@@ -294,21 +293,6 @@ export function SpinWheel() {
                   >
                     {sector.label}
                   </text>
-                  {/* Odds Subtext */}
-                  <text
-                    x={textX}
-                    y={textY + 14}
-                    fill={sector.textColor}
-                    fontSize="9"
-                    fontWeight="700"
-                    fontFamily="monospace"
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    opacity="0.85"
-                    transform={`rotate(${midAngle + 90}, ${textX}, ${textY + 14})`}
-                  >
-                    ({sector.odds})
-                  </text>
                 </g>
               );
             })}
@@ -340,11 +324,11 @@ export function SpinWheel() {
         </button>
       </div>
 
-      {/* Outcome Probabilities Table */}
+      {/* Available rewards */}
       <div className="w-full max-w-3xl mt-8 glass-panel p-5 rounded-2xl">
         <h3 className="text-xs font-mono uppercase tracking-widest text-slate-300 font-bold mb-3 flex items-center space-x-2">
-          <Sparkles className="w-4 h-4 text-[#00FF66]" />
-          <span>Reward Distribution & Probabilities</span>
+          <Disc3 className="w-4 h-4 text-[#00FF66]" />
+          <span>Rewards on the wheel</span>
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
           {WHEEL_SECTORS.map((s) => (
@@ -354,12 +338,11 @@ export function SpinWheel() {
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
               <span className="text-xs font-bold text-white font-mono">{s.label}</span>
-              <span className="text-[11px] font-mono text-[#00FF66] font-semibold">{s.odds}</span>
             </div>
           ))}
         </div>
         <p className="text-[11px] text-slate-500 font-mono mt-3">
-          * 1 initial spin granted per successfully staked NFT. Free spin outcomes credit an additional spin to your wallet. USDT rewards are paid manually by admins upon on-chain verification.
+          One initial spin is granted per successfully staked NFT. Free spin outcomes add a spin credit. Track USDT prizes and payout status on the Rewards page.
         </p>
       </div>
 
@@ -391,21 +374,17 @@ export function SpinWheel() {
                   <span className="text-slate-200">{latestResult.spinId}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Randomness:</span>
-                  <span className="text-[#00FF66]">Backend CSPRNG (not VRF)</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
                   <span>Payout Status:</span>
                   <span className="flex items-center space-x-1 text-amber-300">
                     <Clock className="w-3 h-3" />
-                    <span>{latestResult.requiresPayout ? "Pending Manual Admin USDT Transfer" : "Completed"}</span>
+                    <span>{latestResult.requiresPayout ? "Transfer Pending" : "Completed"}</span>
                   </span>
                 </div>
               </div>
 
               {latestResult.requiresPayout && (
                 <p className="text-[11px] text-amber-200 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                  Your ${latestResult.rewardAmountUsdt.toFixed(2)} USDT prize has been queued in the admin dashboard. The admin will dispatch USDT to your wallet and submit the verified transaction hash.
+                  Your ${latestResult.rewardAmountUsdt.toFixed(2)} USDT prize is awaiting processing. Check the Rewards page for status updates.
                 </p>
               )}
 
