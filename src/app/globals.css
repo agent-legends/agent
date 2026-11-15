@@ -522,26 +522,6 @@ tbody tr {
   padding: 3rem 0 1.5rem;
 }
 
-.site-footer-disclosure {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 1.15rem;
-  border: 1px solid #eadfbe;
-  border-radius: 1rem;
-  background: #fffaf0;
-  color: #70591e;
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
-.site-footer-disclosure svg {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: 0.12rem;
-}
-
 .site-footer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -909,41 +889,9 @@ tbody tr {
   height: 0.9rem;
 }
 
-.home-transparency {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  padding: 1.2rem 1.3rem;
-  border: 1px solid #eadfbe;
-  border-radius: 1.1rem;
-  background: #fffaf0;
-  color: #6d571f;
-}
-
-.home-transparency svg {
-  flex: 0 0 auto;
-  width: 1.2rem;
-  height: 1.2rem;
-  margin-top: 0.1rem;
-}
-
-.home-transparency h2 {
-  margin: 0;
-  color: #594616;
-  font-size: 0.9rem;
-  font-weight: 740;
-}
-
-.home-transparency p {
-  margin: 0.35rem 0 0;
-  color: #705f37;
-  font-size: 0.8rem;
-  line-height: 1.65;
-}
-
 @media (min-width: 640px) {
   .site-footer-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .site-footer-bottom {

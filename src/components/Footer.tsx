@@ -1,23 +1,12 @@
 import Link from "next/link";
-import { AlertTriangle, ExternalLink, Shield } from "lucide-react";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { Shield } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const testnet = CONTRACT_ADDRESSES[97];
 
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        <aside className="site-footer-disclosure" aria-label="Platform disclosure">
-          <AlertTriangle aria-hidden="true" />
-          <p>
-            <strong>Reward information:</strong> Spin results are shown in your
-            history. USDT payout status updates after the BNB Chain transfer is
-            confirmed.
-          </p>
-        </aside>
-
         <div className="site-footer-grid">
           <section>
             <h2>Agent Legends</h2>
@@ -43,33 +32,6 @@ export function Footer() {
           </section>
 
           <section>
-            <h2>Testnet contracts</h2>
-            <ul>
-              {[
-                ["NFT", testnet.nft],
-                ["Staking", testnet.staking],
-                ["USDT", testnet.usdt],
-              ].map(([label, address]) => (
-                <li key={label}>
-                  {address ? (
-                    <a
-                      href={`https://testnet.bscscan.com/address/${address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1"
-                    >
-                      {label}: {address.slice(0, 6)}…{address.slice(-4)}
-                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <span>{label}: not configured</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
             <h2>Protocol rules</h2>
             <ul>
               <li>10,000 NFT maximum supply</li>
@@ -86,7 +48,6 @@ export function Footer() {
           <nav className="site-footer-bottom-links" aria-label="Footer navigation">
             <Link href="/docs">Documentation</Link>
             <Link href="/leaderboard">Leaderboard</Link>
-            <Link href="/admin">Admin portal</Link>
           </nav>
         </div>
       </div>

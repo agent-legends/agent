@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
   Award,
   CheckCircle2,
@@ -142,19 +141,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="home-transparency" aria-labelledby="transparency-heading">
-        <AlertTriangle aria-hidden="true" />
-        <div>
-          <h2 id="transparency-heading">Know how rewards work</h2>
-          <p>
-            Review your spin results and track USDT payout status. Payouts are
-            marked complete after the BNB Chain transfer is confirmed.
-          </p>
-          <Link href="/rewards" className="home-feature-link">
-            View your rewards <ArrowRight aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

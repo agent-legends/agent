@@ -29,7 +29,6 @@ const navLinks = [
   { href: "/rewards", label: "Rewards", icon: Award },
   { href: "/leaderboard", label: "Ranks", icon: Crown },
   { href: "/docs", label: "Docs", icon: FileText },
-  { href: "/admin", label: "Admin", icon: Shield },
 ];
 
 export function Navbar() {
