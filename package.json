@@ -7,6 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "lint": "next lint",
     "compile": "hardhat compile",
     "test:contracts": "hardhat test",
@@ -15,6 +18,7 @@
     "generate:metadata": "ts-node scripts/generate-metadata.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^5.22.0",
     "@prisma/client": "^5.19.1",
     "@rainbow-me/rainbowkit": "^2.1.6",
     "@tanstack/react-query": "^5.56.2",
@@ -23,6 +27,7 @@
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.441.0",
     "next": "^15.5.29",
+    "pg": "^8.23.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.2",
@@ -35,6 +40,7 @@
     "@nomicfoundation/hardhat-ignition-ethers": "^0.15.17",
     "@nomicfoundation/hardhat-network-helpers": "^1.1.2",
     "@nomicfoundation/hardhat-verify": "^2.1.4",
+    "@opennextjs/cloudflare": "1.20.17",
     "@openzeppelin/contracts": "5.0.2",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
@@ -42,6 +48,7 @@
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.16.5",
+    "@types/pg": "8.23.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
@@ -56,6 +63,7 @@
     "tailwindcss": "^3.4.11",
     "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "wrangler": "^4.162.0"
   }
 }

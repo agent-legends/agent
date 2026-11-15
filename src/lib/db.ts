@@ -1,28 +1,45 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
 declare global {
   // eslint-disable-next-line no-var
   var prismaGlobal: PrismaClient | undefined;
+  // eslint-disable-next-line no-var
+  var prismaPoolGlobal: Pool | undefined;
 }
 
-export const prisma =
-  globalThis.prismaGlobal ??
-  new PrismaClient({
+function createPrismaClient() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL must be configured for PostgreSQL access.");
+  }
+
+  const pool =
+    process.env.NODE_ENV === "production"
+      ? new Pool({ connectionString, max: 1 })
+      : (globalThis.prismaPoolGlobal ??= new Pool({ connectionString }));
+
+  return new PrismaClient({
+    adapter: new PrismaPg(pool, { schema: "public" }),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
+}
 
-  if (process.env.NODE_ENV !== "production") {
-    globalThis.prismaGlobal = prisma;
-  }
+export const prisma = globalThis.prismaGlobal ?? createPrismaClient();
 
-  export async function getOrCreateUser(walletAddress: string, referrer?: string) {
-    const normalized = walletAddress.toLowerCase();
-    return prisma.user.upsert({
-      where: { walletAddress: normalized },
-      create: {
-        walletAddress: normalized,
-        referrerAddress: referrer ? referrer.toLowerCase() : null,
-      },
-      update: {},
-    });
-  }
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prismaGlobal = prisma;
+}
+
+export async function getOrCreateUser(walletAddress: string, referrer?: string) {
+  const normalized = walletAddress.toLowerCase();
+  return prisma.user.upsert({
+    where: { walletAddress: normalized },
+    create: {
+      walletAddress: normalized,
+      referrerAddress: referrer ? referrer.toLowerCase() : null,
+    },
+    update: {},
+  });
+}

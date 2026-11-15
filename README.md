@@ -125,6 +125,18 @@ Set `DATABASE_URL`, `BSC_CHAIN_ID`, `ADMIN_WALLETS`, `NEXT_PUBLIC_ADMIN_WALLETS`
 
 For local development, apply the schema with `npx prisma db push`. For a new production database, review the checked-in initial migration and apply it with `npx prisma migrate deploy`; do not use `db push` against production.
 
+### Cloudflare Workers deployment
+
+This project uses the official `@opennextjs/cloudflare` adapter. Build and deploy with:
+
+```bash
+npm run deploy
+```
+
+Set `DATABASE_URL` and `ADMIN_SESSION_SECRET` as Worker secrets with Wrangler; configure the Worker with the same server-side `ADMIN_WALLETS` allowlist used by the local app. The PostgreSQL client uses Prisma's `pg` driver adapter and Cloudflare's Node.js TCP support, so the database must accept connections from the Worker. Set `NEXT_PUBLIC_*` values in the deployment build environment because Next.js embeds those values in browser assets. Do not put private values in `NEXT_PUBLIC_*` variables or `wrangler.jsonc`.
+
+The Worker only sets immutable caching for versioned `/_next/static/` assets. No shared ISR/data cache is enabled for user-specific or API responses.
+
 ### Run Development Server
 ```bash
 npm run dev
