@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -11,8 +11,11 @@ declare global {
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
+  const log: Prisma.LogLevel[] =
+    process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"];
+
   if (!connectionString) {
-    throw new Error("DATABASE_URL must be configured for PostgreSQL access.");
+    return new PrismaClient({ log });
   }
 
   const pool =
@@ -22,7 +25,7 @@ function createPrismaClient() {
 
   return new PrismaClient({
     adapter: new PrismaPg(pool, { schema: "public" }),
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    log,
   });
 }
 
