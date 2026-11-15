@@ -87,16 +87,14 @@ export default function MyNftsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono font-bold tracking-wider mb-2">
+        <div className="my-collection-heading">
+          <div className="page-kicker mb-2">
             <Shield className="w-3.5 h-3.5" />
-            <span>OPERATIVE INVENTORY</span>
+            <span>My collection</span>
           </div>
-          <h1 className="text-3xl font-black text-white uppercase tracking-wider font-mono">
-            My Agent Legends
-          </h1>
+          <h1>Agent Legends</h1>
           <p className="text-xs text-slate-400">
-            Inspect your cybernetic squad, manage 72-hour staking vault custody, and track spin yield.
+            Inspect your collection, manage the 72-hour staking vault, and track spin credits.
           </p>
         </div>
 

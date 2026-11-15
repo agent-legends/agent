@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
 import { Award, Clock, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
@@ -36,18 +37,12 @@ export default function RewardsPage() {
     <div className="space-y-12">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold tracking-wider">
-          <Award className="w-3.5 h-3.5" />
-          <span>BOUNTY REWARD CENTER</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          USDT Bounties & Payouts
-        </h1>
-        <p className="text-xs text-slate-400">
-          Track your prize wheel earnings, audit pending administrative transfers, and view on-chain BSC transaction receipts.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="Reward history"
+        title="USDT payouts"
+        description="Review prize-wheel earnings, pending administrative transfers, and verified BNB Smart Chain transaction receipts."
+        icon={Award}
+      />
 
       {errorMessage && (
         <p className="max-w-4xl mx-auto text-xs text-amber-300" role="alert">{errorMessage}</p>

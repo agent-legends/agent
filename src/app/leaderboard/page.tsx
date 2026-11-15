@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { StatsHeader } from "@/components/StatsHeader";
+import { PageIntro } from "@/components/PageIntro";
 import { Trophy, Crown, Users, Award, Sparkles, Shield } from "lucide-react";
 
 export default function LeaderboardPage() {
@@ -41,18 +42,12 @@ export default function LeaderboardPage() {
     <div className="space-y-12">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold tracking-wider">
-          <Trophy className="w-3.5 h-3.5 text-amber-400" />
-          <span>HALL OF TACTICAL LEGENDS</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          Global Leaderboard
-        </h1>
-        <p className="text-xs text-slate-400">
-          Rankings of the top syndicate referrers, highest prize-wheel winners, and largest collection commanders.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="Community activity"
+        title="Leaderboard"
+        description="Browse the current referral, spin-winner, and collector rankings."
+        icon={Trophy}
+      />
 
       {/* Tabs */}
       <div className="flex justify-center">

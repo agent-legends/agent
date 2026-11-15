@@ -2,6 +2,7 @@
 
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
+import { PageIntro } from "@/components/PageIntro";
 import { FileText, Shield, Lock, Disc3, Users, Award, CheckCircle2, AlertTriangle, Code2 } from "lucide-react";
 
 export default function DocsPage() {
@@ -9,18 +10,12 @@ export default function DocsPage() {
     <div className="space-y-12 max-w-5xl mx-auto">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono font-bold tracking-wider">
-          <FileText className="w-3.5 h-3.5" />
-          <span>WHITE PAPER & TECHNICAL SPECIFICATION</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          Agent Legends 2.0 Documentation
-        </h1>
-        <p className="text-xs text-slate-400">
-          Architecture, smart contract mechanics, economic security assumptions, and manually verified payout processing.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="Documentation"
+        title="Protocol guide"
+        description="Understand the collection, smart contract rules, spin probabilities, referral milestones, and payout verification."
+        icon={FileText}
+      />
 
       <div className="space-y-8 text-xs font-mono">
         {/* 1. Protocol Architecture */}

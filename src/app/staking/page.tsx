@@ -2,6 +2,7 @@
 
 import React from "react";
 import { StakingSection } from "@/components/StakingSection";
+import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
 import { Lock, Shield, Sparkles, Clock, AlertTriangle } from "lucide-react";
 
@@ -10,18 +11,12 @@ export default function StakingPage() {
     <div className="space-y-12">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#9D4EDD]/15 border border-[#9D4EDD]/30 text-[#C77DFF] text-xs font-mono font-bold tracking-wider">
-          <Lock className="w-3.5 h-3.5" />
-          <span>72-HOUR CUSTODY PROTOCOL</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          Agent Legends Staking
-        </h1>
-        <p className="text-xs text-slate-400">
-          Stake your operatives in our immutable smart contract vault. Earn spin credits to play the prize wheel.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="Stake your collection"
+        title="The 72-hour staking vault"
+        description="Stake NFTs in the smart contract vault to earn spin credits. The contract enforces the lock and prevents duplicate initial credits."
+        icon={Lock}
+      />
 
       <StakingSection />
 

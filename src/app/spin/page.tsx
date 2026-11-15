@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SpinWheel } from "@/components/SpinWheel";
+import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
 import { Disc3, ShieldAlert, Award, Clock } from "lucide-react";
 
@@ -10,18 +11,12 @@ export default function SpinPage() {
     <div className="space-y-12">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono font-bold tracking-wider">
-          <Disc3 className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "6s" }} />
-          <span>TACTICAL BOUNTY PRIZE WHEEL</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          Spin & Earn USDT
-        </h1>
-        <p className="text-xs text-slate-400">
-          Roll the prize wheel using spin credits earned from staking. Win real USDT bounties and bonus free spins.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="Spin rewards"
+        title="Use your spin credits"
+        description="Review the published odds, use credits earned from staking, and track your outcomes and payout status."
+        icon={Disc3}
+      />
 
       <SpinWheel />
 

@@ -2,6 +2,7 @@
 
 import React, { Suspense } from "react";
 import { MintSection } from "@/components/MintSection";
+import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
 import { Shield, Sparkles, CheckCircle2 } from "lucide-react";
 
@@ -10,18 +11,12 @@ export default function MintPage() {
     <div className="space-y-12">
       <StatsHeader />
 
-      <div className="text-center space-y-2 max-w-2xl mx-auto">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono font-bold tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>CYBERNETIC OPERATIVES DISPATCH</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-wider font-mono">
-          Mint Agent Legends 2.0
-        </h1>
-        <p className="text-xs text-slate-400">
-          Enforced 10,000 maximum collection cap. Each agent minted immediately unlocks 72-hour staking eligibility and spin credits.
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="The collection"
+        title="Mint Agent Legends"
+        description="A 10,000 NFT maximum supply. The contract calculates the $0.20 USD-equivalent mint price in BNB using its Chainlink price feed."
+        icon={Sparkles}
+      />
 
       <Suspense fallback={<div className="text-center font-mono text-xs text-slate-400 py-10">Loading recruitment interface...</div>}>
         <MintSection />

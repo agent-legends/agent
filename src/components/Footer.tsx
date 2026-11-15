@@ -1,152 +1,96 @@
-import React from "react";
 import Link from "next/link";
-import { Shield, ExternalLink, AlertTriangle } from "lucide-react";
+import { AlertTriangle, ExternalLink, Shield } from "lucide-react";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const testnetNft = CONTRACT_ADDRESSES[97].nft;
-  const testnetStaking = CONTRACT_ADDRESSES[97].staking;
-  const testnetUsdt = CONTRACT_ADDRESSES[97].usdt;
+  const testnet = CONTRACT_ADDRESSES[97];
 
   return (
-    <footer className="w-full border-t border-[#00FF66]/20 bg-[#05070A] text-slate-400 py-12 px-4 sm:px-6 lg:px-8 mt-20">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Transparency & Centralized Randomness Disclosure Banner */}
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start space-x-3">
-          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-bold uppercase tracking-wider text-amber-300">
-              System Architecture & Randomness Transparency Disclosure:
+    <footer className="site-footer">
+      <div className="site-footer-inner">
+        <aside className="site-footer-disclosure" aria-label="Platform disclosure">
+          <AlertTriangle aria-hidden="true" />
+          <p>
+            <strong>Prize transparency:</strong> Spin outcomes are selected by a
+            server-side random number generator and are not independently
+            verifiable VRF results. USDT prizes are dispatched manually and
+            marked paid only after the BNB Chain transfer is verified.
+          </p>
+        </aside>
+
+        <div className="site-footer-grid">
+          <section>
+            <h2>Agent Legends</h2>
+            <p className="flex items-center gap-2 font-semibold text-slate-800">
+              <Shield className="h-5 w-5 text-[#00FF66]" aria-hidden="true" />
+              Agent Legends 2.0
             </p>
-            <p className="text-slate-300">
-              Agent Legends 2.0 utilizes a server-side cryptographically secure pseudo-random number generator (CSPRNG)
-              for all prize-wheel outcomes. Results are calculated on the backend and are{" "}
-              <strong className="text-amber-200">not independently verifiable on-chain Chainlink VRF results</strong>. Winning USDT
-              rewards are audited and manually dispatched by platform administrators with real-time on-chain transaction hash verification.
+            <p className="mt-2">
+              A BNB Smart Chain collection with staking, spin rewards, and
+              community referrals.
             </p>
-          </div>
+          </section>
+
+          <section>
+            <h2>Explore</h2>
+            <ul>
+              <li><Link href="/mint">Mint an NFT</Link></li>
+              <li><Link href="/my-nfts">My collection</Link></li>
+              <li><Link href="/staking">Staking</Link></li>
+              <li><Link href="/spin">Spin rewards</Link></li>
+              <li><Link href="/referrals">Referrals</Link></li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Testnet contracts</h2>
+            <ul>
+              {[
+                ["NFT", testnet.nft],
+                ["Staking", testnet.staking],
+                ["USDT", testnet.usdt],
+              ].map(([label, address]) => (
+                <li key={label}>
+                  {address ? (
+                    <a
+                      href={`https://testnet.bscscan.com/address/${address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1"
+                    >
+                      {label}: {address.slice(0, 6)}…{address.slice(-4)}
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <span>{label}: not configured</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section>
+            <h2>Protocol rules</h2>
+            <ul>
+              <li>10,000 NFT maximum supply</li>
+              <li>$0.20 USD mint price, converted to BNB</li>
+              <li>72-hour staking lock</li>
+              <li>3 successful referrals unlock 1 free NFT</li>
+              <li>USDT payouts are manually verified</li>
+            </ul>
+          </section>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand Column */}
-          <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center space-x-2">
-              <Shield className="w-6 h-6 text-[#00FF66]" />
-              <span className="text-lg font-black tracking-wider text-white">
-                AGENT LEGENDS <span className="text-[#00FF66]">2.0</span>
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Cyberpunk tactical NFT minting, 72-hour staking custody, and spin-to-earn platform powered by BNB Smart Chain.
-            </p>
-            <div className="flex items-center space-x-2 pt-2 text-xs font-mono text-[#00E5FF]">
-              <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-ping" />
-              <span>BNB Smart Chain Active</span>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-xs font-mono uppercase tracking-widest text-slate-200 font-bold mb-3">
-              Platform
-            </h4>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href="/mint" className="hover:text-[#00FF66] transition-colors">
-                  Mint Tactical Agent
-                </Link>
-              </li>
-              <li>
-                <Link href="/staking" className="hover:text-[#00FF66] transition-colors">
-                  NFT Staking (72h Lock)
-                </Link>
-              </li>
-              <li>
-                <Link href="/spin" className="hover:text-[#00FF66] transition-colors">
-                  Spin & Earn Wheel
-                </Link>
-              </li>
-              <li>
-                <Link href="/referrals" className="hover:text-[#00FF66] transition-colors">
-                  Referral Rewards (3 = 1 Free NFT)
-                </Link>
-              </li>
-              <li>
-                <Link href="/rewards" className="hover:text-[#00FF66] transition-colors">
-                  USDT Reward Center
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contract Links */}
-          <div>
-            <h4 className="text-xs font-mono uppercase tracking-widest text-slate-200 font-bold mb-3">
-              Contracts (BSC Testnet)
-            </h4>
-            <ul className="space-y-2 text-xs font-mono">
-              <li>
-                <a
-                  href={`https://testnet.bscscan.com/address/${testnetNft}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 hover:text-[#00FF66] transition-colors"
-                >
-                  <span>NFT: {testnetNft.slice(0, 6)}...{testnetNft.slice(-4)}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`https://testnet.bscscan.com/address/${testnetStaking}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 hover:text-[#00FF66] transition-colors"
-                >
-                  <span>Staking: {testnetStaking.slice(0, 6)}...{testnetStaking.slice(-4)}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`https://testnet.bscscan.com/address/${testnetUsdt}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 hover:text-[#00FF66] transition-colors"
-                >
-                  <span>USDT: {testnetUsdt.slice(0, 6)}...{testnetUsdt.slice(-4)}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Governance & Rules */}
-          <div>
-            <h4 className="text-xs font-mono uppercase tracking-widest text-slate-200 font-bold mb-3">
-              Core Protocol Rules
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-400">
-              <li>• Max Collection Cap: 10,000 NFTs</li>
-              <li>• Mint Cost: $0.20 USD via Chainlink BNB Feed</li>
-              <li>• Initial Spin: 1 per first-time staked NFT</li>
-              <li>• Restake: No duplicate spin credits</li>
-              <li>• Staking Lock: Strict 72-hour custody</li>
-              <li>• Payouts: Verified BSC USDT transfers</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="pt-8 border-t border-slate-900 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {currentYear} Agent Legends 2.0. All tactical rights reserved.</p>
-          <div className="flex items-center space-x-6 text-slate-400">
-            <Link href="/docs" className="hover:text-slate-300">Whitepaper & Specs</Link>
-            <Link href="/admin" className="hover:text-[#C77DFF]">Admin Portal</Link>
-          </div>
+        <div className="site-footer-bottom">
+          <p>© {currentYear} Agent Legends. All rights reserved.</p>
+          <nav className="site-footer-bottom-links" aria-label="Footer navigation">
+            <Link href="/docs">Documentation</Link>
+            <Link href="/leaderboard">Leaderboard</Link>
+            <Link href="/admin">Admin portal</Link>
+          </nav>
         </div>
       </div>
     </footer>
   );
 }
-

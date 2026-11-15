@@ -5,9 +5,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Agent Legends 2.0 | NFT Minting, 72h Staking & Spin-to-Earn on BNB Chain",
+  title: "Agent Legends | Collect, Stake & Earn on BNB Chain",
   description:
-    "Web3 platform in development for NFT minting, 72-hour staking, backend-randomized spins, and manually verified USDT payouts on BNB Smart Chain.",
+    "Collect Agent Legends NFTs on BNB Smart Chain, stake for spin credits, earn referral rewards, and track manually verified USDT payouts.",
   keywords: [
     "Agent Legends",
     "BNB Chain",
@@ -25,11 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen flex flex-col bg-[#07090E] text-slate-100 selection:bg-[#00FF66] selection:text-[#07090E]">
+    <html lang="en">
+      <body className="min-h-screen flex flex-col">
         <Providers>
           <Navbar />
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="site-main flex-1 mx-auto">
             {children}
           </main>
           <Footer />
