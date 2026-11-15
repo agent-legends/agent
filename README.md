@@ -133,6 +133,15 @@ This project uses the official `@opennextjs/cloudflare` adapter. Build and deplo
 npm run deploy
 ```
 
+For Cloudflare Workers Builds, configure the Worker under **Settings > Build** with:
+
+```text
+Build command:  npx opennextjs-cloudflare build
+Deploy command: npx opennextjs-cloudflare deploy
+```
+
+The build command must run first to generate `.open-next/worker.js` and `.open-next/assets`; the deploy command publishes those artifacts. Do not use `npx wrangler deploy` as the Workers Builds deploy command. Workers Builds commands are configured in the Cloudflare dashboard and are not controlled by `wrangler.jsonc`. The `npm run deploy` script above remains a local convenience that runs both OpenNext commands in sequence.
+
 Set `DATABASE_URL` and `ADMIN_SESSION_SECRET` as Worker secrets with Wrangler; configure the Worker with the same server-side `ADMIN_WALLETS` allowlist used by the local app. The PostgreSQL client uses Prisma's `pg` driver adapter and Cloudflare's Node.js TCP support, so the database must accept connections from the Worker. Set `NEXT_PUBLIC_*` values in the deployment build environment because Next.js embeds those values in browser assets. Do not put private values in `NEXT_PUBLIC_*` variables or `wrangler.jsonc`.
 
 The Worker only sets immutable caching for versioned `/_next/static/` assets. No shared ISR/data cache is enabled for user-specific or API responses.
