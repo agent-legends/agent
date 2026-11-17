@@ -3,7 +3,7 @@
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
 import { PageIntro } from "@/components/PageIntro";
-import { FileText, Shield, Lock, Disc3, Users, Award, CheckCircle2, AlertTriangle, Code2 } from "lucide-react";
+import { FileText, Shield, Lock, Disc3, Users, Award, Code2 } from "lucide-react";
 
 export default function DocsPage() {
   return (
@@ -34,20 +34,20 @@ export default function DocsPage() {
           </ul>
         </section>
 
-        {/* 2. NFT Minting & Chainlink Oracle */}
+        {/* 2. NFT Minting & Platform Fee */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Shield className="w-5 h-5 text-[#00E5FF]" />
-            <span>2. NFT Minting & Dynamic Pricing</span>
+          <span>2. NFT Minting & Platform Fee</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            The collection has a fixed maximum supply of <strong className="text-[#00FF66]">10,000 NFTs</strong>. The mint price is fixed in USD at <strong className="text-[#00FF66]">$0.20 USD</strong> and dynamically converted to BNB:
+          The NFT mint itself is <strong className="text-[#00FF66]">free</strong>. The contract provides an on-chain BNB quote for the platform fee: <strong className="text-[#00FF66]">$0.10 per NFT</strong>. Blockchain gas is charged separately.
           </p>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
-            <code>bnbRequiredWei = (0.20 * 10^8 * 10^18) / bnbPriceFromOracle</code>
+          <code>feeWei = quotePlatformFee(quantity)</code>
           </div>
           <p className="text-slate-400">
-            Excess BNB sent by users is automatically refunded in the same transaction. The contract strictly reverts if price feed answers are stale, negative, or unverified.
+          The interface reads the current quote and collection supply directly from the deployed contract. It does not treat the platform fee as an NFT purchase price.
           </p>
         </section>
 
@@ -77,7 +77,10 @@ export default function DocsPage() {
             <span>4. Spin & Earn Rewards</span>
           </div>
           <p className="text-slate-300">
-            The wheel includes USDT prizes, an extra spin credit, and a try-again outcome. View your result and payout status on the Spin and Rewards pages.
+            The server uses a cryptographically secure random number generator for spin outcomes. Results are not on-chain VRF randomness. The wheel includes USDT prizes, an extra spin credit, and a try-again outcome. View your result and payout status on the Spin and Rewards pages.
+          </p>
+          <p className="text-slate-400">
+            Initial credits are synchronized from confirmed staking events. Spin spending and free-spin awards are tracked in the application database; the contract&apos;s <code>spinCredits</code> value reflects on-chain grants, not the remaining app balance.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left border border-slate-800 rounded-xl overflow-hidden">

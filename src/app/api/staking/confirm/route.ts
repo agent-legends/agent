@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import {
-  createPublicClient,
-  http,
-  isAddress,
-  parseAbiItem,
-} from "viem";
+import { createPublicClient, http, isAddress, parseAbiItem } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { getContractConfig } from "@/config/contracts";
 import { prisma } from "@/lib/db";
 
 const STAKED_EVENT = parseAbiItem(
-  "event NftStaked(address indexed user, uint256 indexed tokenId, uint64 stakedAt, bool generatedSpin)"
+  "event NFTStaked(address indexed user, uint256 indexed tokenId, bool receivedInitialSpin)"
 );
 const UNSTAKED_EVENT = parseAbiItem(
-  "event NftUnstaked(address indexed user, uint256 indexed tokenId, uint256 durationStaked)"
-);
-const INITIAL_SPIN_EVENT = parseAbiItem(
-  "event InitialSpinGenerated(address indexed user, uint256 indexed tokenId)"
+  "event NFTUnstaked(address indexed user, uint256 indexed tokenId)"
 );
 const MIN_CONFIRMATIONS = 3n;
 
@@ -44,16 +36,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid wallet address or transaction hash." }, { status: 400 });
   }
 
-  const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+  const chainId = Number(process.env.BSC_CHAIN_ID || "56");
   if (chainId !== 56 && chainId !== 97) {
     return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
   }
-  const config = CONTRACT_ADDRESSES[chainId];
-  if (!isAddress(config.staking)) {
-    return NextResponse.json(
-      { error: "Staking contract address is not configured for this chain." },
-      { status: 503 }
-    );
+  const config = getContractConfig(chainId);
+  if (!config || !isAddress(config.staking)) {
+    return NextResponse.json({ error: "Staking contract address is not configured for this chain." }, { status: 503 });
   }
 
   const normalizedWallet = walletAddress.toLowerCase();
@@ -93,7 +82,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Staking transaction is awaiting required confirmations." }, { status: 409 });
     }
 
-    const [stakeLogs, unstakeLogs, initialSpinLogs] = await Promise.all([
+    const [stakeLogs, unstakeLogs] = await Promise.all([
       client.getLogs({
         address: config.staking as `0x${string}`,
         event: STAKED_EVENT,
@@ -103,12 +92,6 @@ export async function POST(req: NextRequest) {
       client.getLogs({
         address: config.staking as `0x${string}`,
         event: UNSTAKED_EVENT,
-        fromBlock: receipt.blockNumber,
-        toBlock: receipt.blockNumber,
-      }),
-      client.getLogs({
-        address: config.staking as `0x${string}`,
-        event: INITIAL_SPIN_EVENT,
         fromBlock: receipt.blockNumber,
         toBlock: receipt.blockNumber,
       }),
@@ -123,27 +106,19 @@ export async function POST(req: NextRequest) {
         log.transactionHash.toLowerCase() === normalizedHash &&
         log.args.user.toLowerCase() === normalizedWallet
     );
-    const transactionInitialSpinLogs = initialSpinLogs.filter(
-      (log) =>
-        log.transactionHash.toLowerCase() === normalizedHash &&
-        log.args.user.toLowerCase() === normalizedWallet
-    );
     const stakedCount = transactionStakeLogs.length;
     const unstakedCount = transactionUnstakeLogs.length;
-    const initialSpinCount = transactionInitialSpinLogs.length;
-    const generatedSpinCount = transactionStakeLogs.filter((log) => log.args.generatedSpin).length;
     const tokenIds = [
       ...transactionStakeLogs.map((log) => log.args.tokenId.toString()),
       ...transactionUnstakeLogs.map((log) => log.args.tokenId.toString()),
     ];
+    const initialSpinCount = transactionStakeLogs.filter((log) => log.args.receivedInitialSpin).length;
 
     if (
-      stakedCount + unstakedCount === 0 ||
-      initialSpinCount > stakedCount ||
-      generatedSpinCount !== initialSpinCount ||
-      stakedCount < unstakedCount
+      stakedCount + unstakedCount !== 1 ||
+      (stakedCount > 0 && unstakedCount > 0)
     ) {
-      return NextResponse.json({ error: "No valid staking events were found for this wallet." }, { status: 422 });
+      return NextResponse.json({ error: "A unique staking or unstaking event was not found for this wallet." }, { status: 422 });
     }
 
     const metadata = { stakedCount, unstakedCount, initialSpinCount, tokenIds };

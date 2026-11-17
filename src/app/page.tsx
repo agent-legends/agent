@@ -4,7 +4,6 @@ import {
   Award,
   CheckCircle2,
   Disc3,
-  Gift,
   LockKeyhole,
   Shield,
   Sparkles,
@@ -16,17 +15,17 @@ const features = [
   {
     href: "/mint",
     icon: Sparkles,
-    title: "Mint your agent",
+    title: "Mint your legend",
     description:
-      "Mint up to 20 NFTs per transaction. BNB pricing is calculated from the on-chain Chainlink feed.",
-    action: "Explore minting",
+      "The NFT mint is free. A $0.10 platform fee per NFT is payable in BNB, plus network gas.",
+    action: "Open mint",
   },
   {
     href: "/staking",
     icon: LockKeyhole,
     title: "Stake for spin credits",
     description:
-      "Stake your NFTs in the 72-hour vault. Each token grants one initial spin on its first stake.",
+      "Stake an eligible NFT for at least 72 hours. Its first successful stake grants one initial spin credit.",
     action: "View staking",
   },
   {
@@ -34,7 +33,7 @@ const features = [
     icon: Disc3,
     title: "Use your spins",
     description:
-      "Use spin credits and review your results and payout status.",
+      "Review the disclosed reward odds, spin result, and manual USDT payout status.",
     action: "Open the wheel",
   },
   {
@@ -42,7 +41,7 @@ const features = [
     icon: Users,
     title: "Grow your network",
     description:
-      "Every three successful referred wallets unlock one free NFT. Milestones accumulate.",
+      "Three successful referrals unlock one free NFT, subject to eligibility and collection supply.",
     action: "Get your referral link",
   },
 ];
@@ -54,64 +53,71 @@ export default function HomePage() {
         <div className="home-hero-copy">
           <p className="home-eyebrow">
             <Shield aria-hidden="true" />
-            Agent Legends on BNB Smart Chain
+            The next era of Web3 identity
           </p>
           <h1>
-            Collect.
+            YOUR LEGEND
             <br />
-            Stake.
-            <br />
-            <span>Earn.</span>
+            BEGINS <span>HERE.</span>
           </h1>
           <p>
-            Build your Agent Legends collection, stake NFTs for spin credits,
-            and track rewards with clear rules at every step.
+            Enter the world of Agent Legends. Mint your NFT, stake your identity,
+            earn spin opportunities, and join the next generation of AI-powered Web3.
           </p>
 
           <div className="home-actions">
             <Link href="/mint" className="home-button home-button-primary">
               <Sparkles aria-hidden="true" />
-              Explore the collection
+              Mint your NFT
               <ArrowRight aria-hidden="true" />
             </Link>
-            <Link href="/docs" className="home-button home-button-secondary">
-              How it works
+            <Link href="/explore" className="home-button home-button-secondary">
+              Explore collection
             </Link>
           </div>
 
           <ul className="home-hero-points">
-            <li><CheckCircle2 aria-hidden="true" /> $0.20 USD mint price</li>
+            <li><CheckCircle2 aria-hidden="true" /> Free NFT mint</li>
+            <li><CheckCircle2 aria-hidden="true" /> $0.10 platform fee per NFT + gas</li>
             <li><CheckCircle2 aria-hidden="true" /> 72-hour staking lock</li>
-            <li><CheckCircle2 aria-hidden="true" /> On-chain payout verification</li>
           </ul>
         </div>
 
-        <aside className="home-protocol-card" aria-label="How the platform works">
-          <span>A straightforward path</span>
-          <h2>One collection. Three steps.</h2>
+        <aside className="home-protocol-card" aria-label="Agent Legends platform overview">
+          <div className="home-artwork" aria-hidden="true">
+            <span className="home-artwork-orbit home-artwork-orbit-one" />
+            <span className="home-artwork-orbit home-artwork-orbit-two" />
+            <span className="home-artwork-core"><Shield /></span>
+            <span className="home-artwork-caption">AGENT LEGENDS · BNB 56</span>
+          </div>
+          <span>Agent Legends protocol</span>
+          <h2>Own your identity. Enter the arena.</h2>
           <div className="home-process">
             <div className="home-process-item">
               <span className="home-process-icon"><Sparkles aria-hidden="true" /></span>
               <div>
                 <strong>01 · Mint</strong>
-                <p>Pay the USD-denominated price in BNB, calculated by the contract oracle.</p>
+                <p>Mint free. The contract quotes a $0.10-per-NFT platform fee in BNB.</p>
               </div>
             </div>
             <div className="home-process-item">
               <span className="home-process-icon"><LockKeyhole aria-hidden="true" /></span>
               <div>
                 <strong>02 · Stake</strong>
-                <p>Lock your NFT for 72 hours and receive its initial spin credit once.</p>
+                <p>Stake an NFT for 72 hours and get one initial spin credit on first stake.</p>
               </div>
             </div>
             <div className="home-process-item">
               <span className="home-process-icon"><Award aria-hidden="true" /></span>
               <div>
                 <strong>03 · Participate</strong>
-                <p>Use spin credits, invite friends, and follow reward payout status.</p>
+                <p>Invite friends and track spin results and manually processed rewards.</p>
               </div>
             </div>
           </div>
+          <p className="home-fee-note">
+            Minting is free. The platform fee is separate from gas and is not an NFT purchase price.
+          </p>
         </aside>
       </section>
 

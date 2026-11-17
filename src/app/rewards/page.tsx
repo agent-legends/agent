@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
-import { Award, Clock, CheckCircle2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { Award, Clock, CheckCircle2, ExternalLink, ShieldCheck } from "lucide-react";
+import { CONTRACT_ADDRESSES, getContractConfig } from "@/config/contracts";
 
 export default function RewardsPage() {
   const { address } = useAccount();
+  const chainId = useChainId();
   const [userData, setUserData] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,10 +29,7 @@ export default function RewardsPage() {
     }
   }, [address]);
 
-  const chainConfig =
-    Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID) === 56
-      ? CONTRACT_ADDRESSES[56]
-      : CONTRACT_ADDRESSES[97];
+  const chainConfig = getContractConfig(chainId) ?? CONTRACT_ADDRESSES[56];
 
   return (
     <div className="space-y-12">

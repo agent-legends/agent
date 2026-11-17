@@ -1,198 +1,141 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
   useChainId,
+  useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
-import { Lock, Unlock, Shield, AlertTriangle, CheckCircle2, Clock, Sparkles, Disc3 } from "lucide-react";
-import { createPublicClient, http, isAddress, parseAbi } from "viem";
-import { bsc, bscTestnet } from "viem/chains";
-import { CONTRACT_ADDRESSES, AGENT_LEGENDS_STAKING_ABI, AGENT_LEGENDS_NFT_ABI } from "@/config/contracts";
+import { bsc, bscTestnet } from "wagmi/chains";
+import { isAddress } from "viem";
+import { Clock, LockKeyhole, Shield, Sparkles, Unlock } from "lucide-react";
+import { NFT_ABI } from "@/config/abis/nft";
+import { STAKING_ABI } from "@/config/abis/staking";
+import { getContractConfig } from "@/config/contracts";
 
-const NFT_READ_ABI = parseAbi([
-  "function balanceOf(address owner) view returns (uint256)",
-  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
-  "function isApprovedForAll(address owner, address operator) view returns (bool)",
-] as const);
-const STAKING_READ_ABI = parseAbi([
-  "function getUserStakedTokens(address user) view returns (uint256[])",
-  "function hasGeneratedInitialSpin(uint256 tokenId) view returns (bool)",
-  "function getStakeDetails(uint256 tokenId) view returns (address owner, uint64 stakedAt, uint256 unlockTime, bool isLocked)",
-] as const);
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-interface StakedAgentItem {
-  tokenId: number;
-  stakedAt: number; // unix seconds
-  unlockTime: number; // unix seconds
-  isLocked: boolean;
-  remainingSeconds: number;
+function formatDuration(seconds: bigint | undefined) {
+  if (seconds === undefined) return "Checking on-chain lock…";
+  if (seconds === 0n) return "Unlocked";
+  const total = Number(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainingSeconds = total % 60;
+  return `${hours}h ${minutes}m ${remainingSeconds}s remaining`;
 }
 
 export function StakingSection() {
-  const { isConnected, address } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
-
-  const [unstakedTokens, setUnstakedTokens] = useState<number[]>([]);
-  const [initialSpinAwardedTokens, setInitialSpinAwardedTokens] = useState<Set<number>>(new Set());
-  const [selectedToStake, setSelectedToStake] = useState<number[]>([]);
-  const [selectedToUnstake, setSelectedToUnstake] = useState<number[]>([]);
-  const [stakedAgents, setStakedAgents] = useState<StakedAgentItem[]>([]);
-
-  const [isApproved, setIsApproved] = useState(false);
-  const [availableSpins, setAvailableSpins] = useState(0);
-  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
-  const [stakingError, setStakingError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<"STAKE" | "UNSTAKE" | "APPROVE" | null>(null);
+  const config = getContractConfig(chainId);
+  const nftAddress = config && isAddress(config.nft) ? config.nft : undefined;
+  const stakingAddress = config && isAddress(config.staking) ? config.staking : undefined;
+  const chain = chainId === 97 ? bscTestnet : bsc;
+  const [tokenIdInput, setTokenIdInput] = useState("");
+  const [pendingAction, setPendingAction] = useState<"APPROVE" | "STAKE" | "UNSTAKE" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [syncedHash, setSyncedHash] = useState<string | null>(null);
 
-  const activeContractConfig =
-    chainId === 56 ? CONTRACT_ADDRESSES[56] : chainId === 97 ? CONTRACT_ADDRESSES[97] : null;
+  const tokenId = useMemo(
+    () => (/^\d+$/.test(tokenIdInput) ? BigInt(tokenIdInput) : undefined),
+    [tokenIdInput]
+  );
 
-  const { data: hash, isPending: isTxPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-    confirmations: 3,
+  const ownerQuery = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "ownerOf",
+    args: tokenId === undefined ? undefined : [tokenId],
+    query: { enabled: Boolean(nftAddress && tokenId !== undefined) },
+  });
+  const stakeInfoQuery = useReadContract({
+    address: stakingAddress,
+    abi: STAKING_ABI,
+    functionName: "stakeInfo",
+    args: tokenId === undefined ? undefined : [tokenId],
+    query: { enabled: Boolean(stakingAddress && tokenId !== undefined) },
+  });
+  const lockQuery = useReadContract({
+    address: stakingAddress,
+    abi: STAKING_ABI,
+    functionName: "STAKING_LOCK",
+    query: { enabled: Boolean(stakingAddress) },
+  });
+  const remainingQuery = useReadContract({
+    address: stakingAddress,
+    abi: STAKING_ABI,
+    functionName: "getStakeTimeRemaining",
+    args: tokenId === undefined ? undefined : [tokenId],
+    query: { enabled: Boolean(stakingAddress && tokenId !== undefined) },
+  });
+  const creditsQuery = useReadContract({
+    address: stakingAddress,
+    abi: STAKING_ABI,
+    functionName: "spinCredits",
+    args: address ? [address] : undefined,
+    query: { enabled: Boolean(stakingAddress && address) },
+  });
+  const initialSpinQuery = useReadContract({
+    address: stakingAddress,
+    abi: STAKING_ABI,
+    functionName: "hasReceivedInitialSpin",
+    args: tokenId === undefined ? undefined : [tokenId],
+    query: { enabled: Boolean(stakingAddress && tokenId !== undefined) },
+  });
+  const approvalQuery = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "isApprovedForAll",
+    args: address && stakingAddress ? [address, stakingAddress] : undefined,
+    query: { enabled: Boolean(nftAddress && address && stakingAddress) },
   });
 
+  const { data: hash, isPending: isWalletPending, writeContractAsync } = useWriteContract();
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({ hash, confirmations: 3 });
+  const isBusy = isWalletPending || isConfirming;
+  const staker = stakeInfoQuery.data?.[0];
+  const isStaked = Boolean(staker && staker.toLowerCase() !== ZERO_ADDRESS);
+  const isStakedByUser = Boolean(address && staker?.toLowerCase() === address.toLowerCase());
+  const isOwnedByUser = Boolean(address && ownerQuery.data?.toLowerCase() === address.toLowerCase());
+  const timeRemaining = remainingQuery.data;
+  const isUnlocked = timeRemaining === 0n;
+  const isApproved = approvalQuery.data === true;
+
   const refreshChainData = useCallback(async () => {
-    if (!address || !activeContractConfig) {
-      setUnstakedTokens([]);
-      setInitialSpinAwardedTokens(new Set());
-      setStakedAgents([]);
-      setAvailableSpins(0);
-      setIsApproved(false);
-      return;
-    }
-
-    const nftAddress = activeContractConfig.nft;
-    const stakingAddress = activeContractConfig.staking;
-    if (!isAddress(nftAddress) || !isAddress(stakingAddress)) {
-      setUnstakedTokens([]);
-      setInitialSpinAwardedTokens(new Set());
-      setStakedAgents([]);
-      setAvailableSpins(0);
-      setIsApproved(false);
-      setStakingError("NFT and staking contract addresses must be configured for this BNB Chain.");
-      return;
-    }
-
-    const publicClient = createPublicClient({
-      chain: chainId === 56 ? bsc : bscTestnet,
-      transport: http(activeContractConfig.rpcUrl),
-    });
-    setIsLoadingAgents(true);
-    setStakingError(null);
-    try {
-      const [balance, stakedTokenIds, approved, userResponse] = await Promise.all([
-        publicClient.readContract({
-          address: nftAddress,
-          abi: NFT_READ_ABI,
-          functionName: "balanceOf",
-          args: [address],
-          authorizationList: undefined,
-        }),
-        publicClient.readContract({
-          address: stakingAddress,
-          abi: STAKING_READ_ABI,
-          functionName: "getUserStakedTokens",
-          args: [address],
-          authorizationList: undefined,
-        }),
-        publicClient.readContract({
-          address: nftAddress,
-          abi: NFT_READ_ABI,
-          functionName: "isApprovedForAll",
-          args: [address, stakingAddress],
-          authorizationList: undefined,
-        }),
-        fetch(`/api/user?wallet=${address}`),
-      ]);
-
-      const walletTokenIds = await Promise.all(
-        Array.from({ length: Number(balance) }, (_, index) =>
-          publicClient.readContract({
-            address: nftAddress,
-            abi: NFT_READ_ABI,
-            functionName: "tokenOfOwnerByIndex",
-            args: [address, BigInt(index)],
-            authorizationList: undefined,
-          })
-        )
-      );
-      const initialSpinFlags = await Promise.all(
-        walletTokenIds.map((tokenId) =>
-          publicClient.readContract({
-            address: stakingAddress,
-            abi: STAKING_READ_ABI,
-            functionName: "hasGeneratedInitialSpin",
-            args: [tokenId],
-            authorizationList: undefined,
-          })
-        )
-      );
-      const stakeDetails = await Promise.all(
-        stakedTokenIds.map((tokenId) =>
-          publicClient.readContract({
-            address: stakingAddress,
-            abi: STAKING_READ_ABI,
-            functionName: "getStakeDetails",
-            args: [tokenId],
-            authorizationList: undefined,
-          })
-        )
-      );
-      const userData = await userResponse.json();
-      if (!userResponse.ok) throw new Error(userData.error || "Spin balances are unavailable.");
-
-      const stakedSet = new Set(stakedTokenIds.map((tokenId) => tokenId.toString()));
-      setUnstakedTokens(
-        walletTokenIds
-          .filter((tokenId) => !stakedSet.has(tokenId.toString()))
-          .map(Number)
-      );
-      setInitialSpinAwardedTokens(
-        new Set(
-          walletTokenIds
-            .filter((_, index) => initialSpinFlags[index])
-            .map(Number)
-        )
-      );
-      setStakedAgents(
-        stakedTokenIds.map((tokenId, index) => {
-          const [, stakedAt, unlockTime, isLocked] = stakeDetails[index];
-          const unlockAt = Number(unlockTime);
-          return {
-            tokenId: Number(tokenId),
-            stakedAt: Number(stakedAt),
-            unlockTime: unlockAt,
-            isLocked,
-            remainingSeconds: Math.max(0, unlockAt - Math.floor(Date.now() / 1000)),
-          };
-        })
-      );
-      setIsApproved(approved);
-      setAvailableSpins(userData.availableSpins);
-    } finally {
-      setIsLoadingAgents(false);
-    }
-  }, [address, activeContractConfig, chainId]);
-
-  useEffect(() => {
-    refreshChainData().catch((error: unknown) => {
-      setStakingError(error instanceof Error ? error.message : "Staking data could not be loaded.");
-    });
-  }, [refreshChainData]);
+    await Promise.all([
+      ownerQuery.refetch(),
+      stakeInfoQuery.refetch(),
+      lockQuery.refetch(),
+      remainingQuery.refetch(),
+      creditsQuery.refetch(),
+      initialSpinQuery.refetch(),
+      approvalQuery.refetch(),
+    ]);
+  }, [
+    ownerQuery.refetch,
+    stakeInfoQuery.refetch,
+    lockQuery.refetch,
+    remainingQuery.refetch,
+    creditsQuery.refetch,
+    initialSpinQuery.refetch,
+    approvalQuery.refetch,
+  ]);
 
   useEffect(() => {
     if (!isConfirmed || !hash || !address || !pendingAction || syncedHash === hash) return;
     setSyncedHash(hash);
+
     if (pendingAction === "APPROVE") {
       setPendingAction(null);
-      refreshChainData().catch((error: unknown) => {
-        setStakingError(error instanceof Error ? error.message : "Staking data could not be refreshed.");
+      void refreshChainData().catch((error: unknown) => {
+        setActionError(error instanceof Error ? error.message : "Approval status could not be refreshed.");
       });
       return;
     }
@@ -204,347 +147,150 @@ export function StakingSection() {
     })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Staking record could not be synchronized.");
+        if (!response.ok) throw new Error(data.error || "Staking activity could not be synchronized.");
         await refreshChainData();
         setPendingAction(null);
       })
       .catch((error: unknown) => {
-        setStakingError(error instanceof Error ? error.message : "Staking record could not be synchronized.");
+        setSyncError(error instanceof Error ? error.message : "Staking activity could not be synchronized.");
+        setPendingAction(null);
       });
   }, [isConfirmed, hash, address, pendingAction, syncedHash, refreshChainData]);
 
-  // Update remaining seconds countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Math.floor(Date.now() / 1000);
-      setStakedAgents((prev) =>
-        prev.map((agent) => {
-          const diff = Math.max(0, agent.unlockTime - now);
-          return {
-            ...agent,
-            isLocked: diff > 0,
-            remainingSeconds: diff,
-          };
-        })
-      );
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatCountdown = (seconds: number) => {
-    if (seconds <= 0) return "UNLOCKED (Eligible to Unstake)";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h}h ${m}m ${s}s remaining`;
-  };
-
-  const handleToggleStakeSelect = (id: number) => {
-    setSelectedToStake((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleUnstakeSelect = (id: number) => {
-    setSelectedToUnstake((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleStake = async () => {
-    if (selectedToStake.length === 0) return;
-    if (!activeContractConfig || !address) return;
+  const handleAction = async (action: "APPROVE" | "STAKE" | "UNSTAKE") => {
+    if (!address || !nftAddress || !stakingAddress || tokenId === undefined) return;
+    setActionError(null);
+    setSyncError(null);
+    setPendingAction(action);
     try {
-      setPendingAction("STAKE");
-      await writeContractAsync({
-        address: activeContractConfig.staking as `0x${string}`,
-        account: address,
-        chain: chainId === 56 ? bsc : bscTestnet,
-        abi: AGENT_LEGENDS_STAKING_ABI,
-        functionName: "stake",
-        args: [selectedToStake.map((id) => BigInt(id))],
-      });
+      if (action === "APPROVE") {
+        await writeContractAsync({
+          address: nftAddress,
+          abi: NFT_ABI,
+          functionName: "setApprovalForAll",
+          args: [stakingAddress, true],
+          chain,
+        });
+      } else if (action === "STAKE") {
+        await writeContractAsync({
+          address: stakingAddress,
+          abi: STAKING_ABI,
+          functionName: "stake",
+          args: [tokenId],
+          chain,
+        });
+      } else {
+        await writeContractAsync({
+          address: stakingAddress,
+          abi: STAKING_ABI,
+          functionName: "unstake",
+          args: [tokenId],
+          chain,
+        });
+      }
     } catch (error: unknown) {
       setPendingAction(null);
-      setStakingError(error instanceof Error ? error.message : "Staking transaction failed.");
+      setActionError(error instanceof Error ? error.message : "The wallet rejected the transaction.");
     }
   };
 
-  const handleUnstake = async () => {
-    if (selectedToUnstake.length === 0) return;
-    if (!activeContractConfig || !address) return;
-    try {
-      setPendingAction("UNSTAKE");
-      await writeContractAsync({
-        address: activeContractConfig.staking as `0x${string}`,
-        account: address,
-        chain: chainId === 56 ? bsc : bscTestnet,
-        abi: AGENT_LEGENDS_STAKING_ABI,
-        functionName: "unstake",
-        args: [selectedToUnstake.map((id) => BigInt(id))],
-      });
-    } catch (error: unknown) {
-      setPendingAction(null);
-      setStakingError(error instanceof Error ? error.message : "Unstaking transaction failed.");
-    }
-  };
-
-  const handleApproveAll = async () => {
-    if (!activeContractConfig || !address) return;
-    try {
-      setPendingAction("APPROVE");
-      await writeContractAsync({
-        address: activeContractConfig.nft as `0x${string}`,
-        account: address,
-        chain: chainId === 56 ? bsc : bscTestnet,
-        abi: AGENT_LEGENDS_NFT_ABI,
-        functionName: "setApprovalForAll",
-        args: [activeContractConfig.staking as `0x${string}`, true],
-      });
-    } catch (error: unknown) {
-      setPendingAction(null);
-      setStakingError(error instanceof Error ? error.message : "NFT approval failed.");
-    }
-  };
+  const contractReady = Boolean(nftAddress && stakingAddress);
+  const canStake = Boolean(isConnected && isOwnedByUser && !isStaked && isApproved && !isBusy);
+  const canApprove = Boolean(isConnected && isOwnedByUser && !isApproved && !isBusy);
+  const canUnstake = Boolean(isConnected && isStakedByUser && isUnlocked && !isBusy);
+  const lockHours = lockQuery.data === undefined ? null : Number(lockQuery.data) / 3600;
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8">
-      {/* Policy Notice Banner */}
-      <div className="p-4 rounded-2xl glass-panel border border-[#00FF66]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start space-x-3">
-          <Lock className="w-5 h-5 text-[#00FF66] flex-shrink-0 mt-0.5" />
-          <div className="text-xs space-y-0.5">
-            <h4 className="font-bold font-mono text-white tracking-wide">
-              72-Hour Tactical Staking Lock & Spin Rule:
-            </h4>
-            <p className="text-slate-400">
-              Every NFT generates <strong className="text-[#00FF66]">exactly one initial spin credit</strong> upon its first successful stake. NFTs cannot be unstaked before 72 hours. Restaking will not duplicate initial spin credits.
-            </p>
-          </div>
-          {stakingError && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs" role="alert">
-              {stakingError}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] font-mono text-xs font-bold whitespace-nowrap self-start sm:self-auto">
-          <Disc3 className="w-4 h-4 animate-spin text-[#00FF66]" style={{ animationDuration: "8s" }} />
-          <span>{availableSpins} Available Spins</span>
-        </div>
+    <section className="staking-shell" aria-label="On-chain NFT staking">
+      <header className="staking-shell-heading">
+        <span className="page-kicker"><LockKeyhole aria-hidden="true" /> Non-custodial interface · BNB Smart Chain</span>
+        <h2>Stake an Agent Legend</h2>
+        <p>Enter a token ID to check ownership and staking state directly against the verified contracts. This collection does not expose enumerable NFT methods.</p>
+      </header>
+
+      <div className="staking-credit-card">
+        <Sparkles aria-hidden="true" />
+        <div><span>On-chain spin credits</span><strong>{creditsQuery.data?.toString() ?? "—"}</strong></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Unstaked NFTs */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-[#00FF66]" />
-              <h3 className="text-base font-bold font-mono text-white uppercase tracking-wider">
-                Unstaked Agents ({unstakedTokens.length})
-              </h3>
-            </div>
-            {unstakedTokens.length > 0 && (
-              <button
-                onClick={() =>
-                  setSelectedToStake(
-                    selectedToStake.length === unstakedTokens.length ? [] : [...unstakedTokens]
-                  )
-                }
-                className="text-[11px] font-mono text-[#00E5FF] hover:underline"
-              >
-                {selectedToStake.length === unstakedTokens.length ? "Deselect All" : "Select All"}
-              </button>
-            )}
-          </div>
+      {!isConnected ? (
+        <p className="staking-note">Connect a wallet to query your token and spin-credit state.</p>
+      ) : !contractReady ? (
+        <p className="staking-error" role="alert">NFT and staking contract addresses are not configured for this network.</p>
+      ) : (
+        <>
+          <label className="staking-token-field" htmlFor="staking-token-id">
+            Token ID
+            <input
+              id="staking-token-id"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Enter an Agent Legend token ID"
+              value={tokenIdInput}
+              onChange={(event) => setTokenIdInput(event.target.value.trim())}
+              disabled={isBusy}
+            />
+          </label>
 
-          {isLoadingAgents ? (
-            <div className="py-12 text-center text-slate-400 font-mono text-xs">Loading on-chain NFT ownership...</div>
-          ) : unstakedTokens.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 font-mono text-xs space-y-2">
-              <p>No unstaked Agent Legends NFTs found in this wallet.</p>
-              <a href="/mint" className="text-[#00FF66] hover:underline font-bold">
-                Mint your first agent now &rarr;
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                {unstakedTokens.map((id) => {
-                  const isSelected = selectedToStake.includes(id);
-                  return (
-                    <div
-                      key={id}
-                      onClick={() => handleToggleStakeSelect(id)}
-                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                        isSelected
-                          ? "bg-[#00FF66]/10 border-[#00FF66] shadow-neon-green"
-                          : "bg-slate-950/70 border-slate-800 hover:border-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center font-mono font-bold text-[#00FF66]">
-                          #{id}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold font-mono text-white">Agent #{id}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {initialSpinAwardedTokens.has(id)
-                              ? "Initial spin already awarded"
-                              : "+1 initial spin on first stake"}
-                          </div>
-                        </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="rounded border-slate-700 text-[#00FF66] focus:ring-0"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {!isApproved ? (
-                <button
-                  onClick={handleApproveAll}
-                  disabled={!isConnected || !activeContractConfig || isTxPending || isConfirming}
-                  className="w-full py-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold font-mono tracking-wider hover:bg-amber-500/30 transition-all"
-                >
-                  Approve Staking Contract
-                </button>
+          {tokenId !== undefined && (
+            <div className="staking-token-state" aria-live="polite">
+              {ownerQuery.isLoading || stakeInfoQuery.isLoading ? (
+                <p>Reading ownership and stake state…</p>
+              ) : ownerQuery.error ? (
+                <p role="alert">This token ID could not be verified on the configured NFT contract.</p>
+              ) : isStakedByUser ? (
+                <>
+                  <p><LockKeyhole aria-hidden="true" /> Token #{tokenId.toString()} is staked by this wallet.</p>
+                  <p><Clock aria-hidden="true" /> {formatDuration(timeRemaining)}</p>
+                  <p>{initialSpinQuery.data ? "Its one-time initial spin was already awarded." : "No initial spin has been recorded for this token."}</p>
+                  <button type="button" onClick={() => void handleAction("UNSTAKE")} disabled={!canUnstake}>
+                    <Unlock aria-hidden="true" />
+                    {isBusy ? "Waiting for transaction…" : isUnlocked ? "Unstake NFT" : "NFT is time-locked"}
+                  </button>
+                </>
+              ) : isStaked ? (
+                <p role="status">This token is currently staked by another wallet.</p>
+              ) : isOwnedByUser ? (
+                <>
+                  <p><Shield aria-hidden="true" /> Token #{tokenId.toString()} is owned by this wallet.</p>
+                  <p>
+                    {initialSpinQuery.data
+                      ? "This token has already received its one-time initial spin."
+                      : "The first successful stake grants one initial spin credit."}
+                  </p>
+                  {!isApproved ? (
+                    <button type="button" onClick={() => void handleAction("APPROVE")} disabled={!canApprove}>
+                      {isBusy ? "Waiting for transaction…" : "Approve staking contract"}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => void handleAction("STAKE")} disabled={!canStake}>
+                      {isBusy ? "Waiting for transaction…" : "Stake this NFT"}
+                    </button>
+                  )}
+                </>
               ) : (
-                <button
-                  onClick={handleStake}
-                  disabled={!isConnected || !activeContractConfig || selectedToStake.length === 0 || isTxPending || isConfirming}
-                  className={`w-full py-3.5 rounded-xl text-xs font-black font-mono tracking-wider uppercase transition-all ${
-                    selectedToStake.length > 0
-                      ? "bg-[#00FF66] text-[#07090E] hover:bg-[#00CC52] shadow-neon-green"
-                      : "bg-slate-800 text-slate-500 cursor-not-allowed"
-                  }`}
-                >
-                  {isTxPending || isConfirming
-                    ? "Locking into Staking..."
-                    : `Stake ${selectedToStake.length} Selected Agent${selectedToStake.length > 1 ? "s" : ""}`}
-                </button>
+                <p role="status">This wallet does not own this token, and it is not shown as staked by this wallet.</p>
               )}
             </div>
           )}
-        </div>
 
-        {/* Right Column: Staked NFTs (72-Hour Lock) */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Lock className="w-5 h-5 text-[#C77DFF]" />
-              <h3 className="text-base font-bold font-mono text-white uppercase tracking-wider">
-                Staked Custody ({stakedAgents.length})
-              </h3>
-            </div>
-            {stakedAgents.some((a) => !a.isLocked) && (
-              <button
-                onClick={() =>
-                  setSelectedToUnstake(
-                    selectedToUnstake.length === stakedAgents.filter((a) => !a.isLocked).length
-                      ? []
-                      : stakedAgents.filter((a) => !a.isLocked).map((a) => a.tokenId)
-                  )
-                }
-                className="text-[11px] font-mono text-[#00E5FF] hover:underline"
-              >
-                Select Unlocked
-              </button>
-            )}
-          </div>
+          <p className="staking-lock-note">
+            <Clock aria-hidden="true" />
+            {lockHours === null ? "Reading the contract lock duration…" : `The contract enforces a ${lockHours}-hour minimum staking lock.`}
+            {" "}Unused spin credits remain on-chain after unstaking.
+          </p>
+        </>
+      )}
 
-          {stakedAgents.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 font-mono text-xs">
-              No agents currently staked in the 72-hour custody vault.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                {stakedAgents.map((agent) => {
-                  const isSelected = selectedToUnstake.includes(agent.tokenId);
-                  return (
-                    <div
-                      key={agent.tokenId}
-                      onClick={() => !agent.isLocked && handleToggleUnstakeSelect(agent.tokenId)}
-                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
-                        agent.isLocked
-                          ? "bg-slate-950/50 border-slate-900 opacity-85 cursor-not-allowed"
-                          : isSelected
-                          ? "bg-[#9D4EDD]/20 border-[#9D4EDD] shadow-neon-purple cursor-pointer"
-                          : "bg-slate-950/80 border-slate-800 hover:border-slate-700 cursor-pointer"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-bold ${
-                            agent.isLocked
-                              ? "bg-slate-900 text-slate-400 border border-slate-800"
-                              : "bg-[#9D4EDD]/30 text-[#C77DFF] border border-[#9D4EDD]/40"
-                          }`}
-                        >
-                          #{agent.tokenId}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold font-mono text-white flex items-center space-x-2">
-                            <span>Agent #{agent.tokenId}</span>
-                            {agent.isLocked ? (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold">
-                                72H LOCKED
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
-                                UNLOCKED
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] font-mono text-slate-400 flex items-center space-x-1 mt-0.5">
-                            <Clock className="w-3 h-3 text-[#00E5FF]" />
-                            <span className={agent.isLocked ? "text-amber-300" : "text-emerald-400"}>
-                              {formatCountdown(agent.remainingSeconds)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {!agent.isLocked ? (
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          className="rounded border-slate-700 text-[#9D4EDD] focus:ring-0"
-                        />
-                      ) : (
-                        <Lock className="w-4 h-4 text-slate-600" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={handleUnstake}
-                disabled={!isConnected || !activeContractConfig || selectedToUnstake.length === 0 || isTxPending || isConfirming}
-                className={`w-full py-3.5 rounded-xl text-xs font-black font-mono tracking-wider uppercase transition-all flex items-center justify-center space-x-2 ${
-                  selectedToUnstake.length > 0
-                    ? "bg-[#9D4EDD] text-white hover:bg-[#7B2CBF] shadow-neon-purple"
-                    : "bg-slate-800 text-slate-500 cursor-not-allowed"
-                }`}
-              >
-                <Unlock className="w-4 h-4" />
-                <span>
-                  {isTxPending || isConfirming
-                    ? "Unstaking..."
-                    : `Unstake ${selectedToUnstake.length} Agent${selectedToUnstake.length > 1 ? "s" : ""}`}
-                </span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      {(actionError || syncError) && (
+        <p className="staking-error" role="alert">{actionError || syncError}</p>
+      )}
+      {hash && isConfirmed && (
+        <p className="staking-confirmed" role="status">
+          Transaction confirmed. <a href={`${config?.explorer}/tx/${hash}`} target="_blank" rel="noopener noreferrer">View on explorer</a>
+        </p>
+      )}
+    </section>
   );
 }

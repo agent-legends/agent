@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import {
-  createPublicClient,
-  http,
-  isAddress,
-  parseAbiItem,
-} from "viem";
+import { createPublicClient, http, isAddress, parseAbiItem } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { getContractConfig } from "@/config/contracts";
+import { NFT_ABI } from "@/config/abis/nft";
 import { prisma } from "@/lib/db";
 
 const MINT_EVENT = parseAbiItem(
-  "event AgentMinted(address indexed minter, uint256 indexed startTokenId, uint256 quantity, uint256 bnbCost, address indexed referrer)"
+  "event NFTMinted(address indexed recipient, uint256 indexed tokenId, uint256 platformFee)"
 );
 const REFERRAL_EVENT = parseAbiItem(
-  "event ReferralAttributed(address indexed referee, address indexed referrer)"
+  "event ReferralRecorded(address indexed referrer, address indexed referee, uint256 totalReferrals)"
 );
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MIN_CONFIRMATIONS = 3n;
@@ -40,12 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid wallet address or transaction hash." }, { status: 400 });
   }
 
-  const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+  const chainId = Number(process.env.BSC_CHAIN_ID || "56");
   if (chainId !== 56 && chainId !== 97) {
     return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
   }
-  const config = CONTRACT_ADDRESSES[chainId];
-  if (!isAddress(config.nft)) {
+  const config = getContractConfig(chainId);
+  if (!config || !isAddress(config.nft)) {
     return NextResponse.json({ error: "NFT contract address is not configured for this chain." }, { status: 503 });
   }
 
@@ -82,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Mint transaction is awaiting required confirmations." }, { status: 409 });
     }
 
-    const [mintLogs, referralLogs] = await Promise.all([
+    const [mintLogs, referralLogs, assignedReferrer] = await Promise.all([
       client.getLogs({
         address: config.nft as `0x${string}`,
         event: MINT_EVENT,
@@ -95,40 +91,41 @@ export async function POST(req: NextRequest) {
         fromBlock: receipt.blockNumber,
         toBlock: receipt.blockNumber,
       }),
+      client.readContract({
+        address: config.nft,
+        abi: NFT_ABI,
+        functionName: "referrerOf",
+        args: [normalizedWallet as `0x${string}`],
+      }),
     ]);
-    const matchingMintLogs = mintLogs.filter(
+    const mintEvents = mintLogs.filter(
       (log) =>
         log.transactionHash.toLowerCase() === normalizedHash &&
-        log.args.minter.toLowerCase() === normalizedWallet
+        log.args.recipient.toLowerCase() === normalizedWallet
     );
-    if (matchingMintLogs.length !== 1) {
-      return NextResponse.json({ error: "A unique Agent Legends mint event was not found." }, { status: 422 });
-    }
-
-    const mintArgs = matchingMintLogs[0].args;
-    const mintRecord = {
-      startTokenId: mintArgs.startTokenId,
-      quantity: mintArgs.quantity,
-      referrer: mintArgs.referrer.toLowerCase(),
-    };
-    const matchingReferralLogs = referralLogs.filter(
+    const referralEvents = referralLogs.filter(
       (log) =>
         log.transactionHash.toLowerCase() === normalizedHash &&
         log.args.referee.toLowerCase() === normalizedWallet
     );
-    if (matchingReferralLogs.length > 1) {
-      return NextResponse.json({ error: "Mint transaction contains ambiguous referral events." }, { status: 422 });
+    if (mintEvents.length === 0 || mintEvents.length > 20 || referralEvents.length > 1) {
+      return NextResponse.json({ error: "Valid mint events were not found for this wallet." }, { status: 422 });
     }
-    const attributedReferrer = matchingReferralLogs[0]?.args.referrer.toLowerCase();
+    const referralEvent = referralEvents[0];
+    if (
+      referralEvent &&
+      (assignedReferrer.toLowerCase() !== referralEvent.args.referrer.toLowerCase() ||
+        assignedReferrer.toLowerCase() === ZERO_ADDRESS)
+    ) {
+      return NextResponse.json({ error: "On-chain referral attribution does not match the mint event." }, { status: 422 });
+    }
 
-    if (!mintRecord || mintRecord.quantity < 1n || mintRecord.quantity > 20n) {
-      return NextResponse.json({ error: "A valid Agent Legends mint event was not found." }, { status: 422 });
-    }
-    if (attributedReferrer && attributedReferrer !== mintRecord.referrer) {
-      return NextResponse.json({ error: "Mint referral events do not match." }, { status: 422 });
-    }
+    const tokenIds = mintEvents.map((log) => log.args.tokenId.toString());
+    const quantity = tokenIds.length;
+    const referrerAddress =
+      assignedReferrer.toLowerCase() === ZERO_ADDRESS ? null : assignedReferrer.toLowerCase();
+    const metadata = JSON.stringify({ quantity, tokenIds, referrerAddress });
 
-    const quantity = Number(mintRecord.quantity);
     await prisma.$transaction(
       async (tx) => {
         await tx.user.upsert({
@@ -136,11 +133,11 @@ export async function POST(req: NextRequest) {
           create: {
             walletAddress: normalizedWallet,
             totalMints: quantity,
-            referrerAddress: attributedReferrer || null,
+            referrerAddress,
           },
           update: {
             totalMints: { increment: quantity },
-            ...(attributedReferrer ? { referrerAddress: attributedReferrer } : {}),
+            ...(referrerAddress ? { referrerAddress } : {}),
           },
         });
         await tx.transaction.create({
@@ -149,25 +146,21 @@ export async function POST(req: NextRequest) {
             walletAddress: normalizedWallet,
             type: "MINT",
             amount: quantity.toString(),
-            metadata: JSON.stringify({
-              startTokenId: mintRecord.startTokenId.toString(),
-              quantity,
-              referrer: mintRecord.referrer,
-            }),
+            metadata,
           },
         });
 
-        if (mintRecord.referrer !== ZERO_ADDRESS) {
+        if (referrerAddress) {
           await tx.user.upsert({
-            where: { walletAddress: mintRecord.referrer },
+            where: { walletAddress: referrerAddress },
             create: {
-              walletAddress: mintRecord.referrer,
-              successfulReferrals: attributedReferrer ? 1 : 0,
+              walletAddress: referrerAddress,
+              successfulReferrals: referralEvent ? 1 : 0,
               referredNftCount: quantity,
             },
             update: {
+              ...(referralEvent ? { successfulReferrals: { increment: 1 } } : {}),
               referredNftCount: { increment: quantity },
-              ...(attributedReferrer ? { successfulReferrals: { increment: 1 } } : {}),
             },
           });
         }
@@ -178,7 +171,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       quantity,
-      startTokenId: mintRecord.startTokenId.toString(),
+      tokenIds,
+      referrerAddress,
     });
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

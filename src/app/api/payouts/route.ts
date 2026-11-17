@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       if (typeof txHash !== "string" || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
         return NextResponse.json({ error: "Invalid BNB Chain transaction hash." }, { status: 400 });
       }
-      const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+      const chainId = Number(process.env.BSC_CHAIN_ID || "56");
       if (chainId !== 56 && chainId !== 97) {
         return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
       }

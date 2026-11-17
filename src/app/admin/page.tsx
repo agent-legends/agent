@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, useWriteContract, useChainId, useSignMessage } from "wagmi";
+import { useAccount, useChainId, useSignMessage } from "wagmi";
 import { Shield, ShieldAlert, Award, Disc3, Users, CheckCircle2, XCircle, ExternalLink, Download, Lock, Unlock, AlertCircle, RefreshCw } from "lucide-react";
 import { isPublicAdminWallet } from "@/lib/publicAdminAuth";
 import { createAdminLoginMessage } from "@/lib/authMessages";
-import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI, AGENT_LEGENDS_STAKING_ABI } from "@/config/contracts";
+import { CONTRACT_ADDRESSES, getContractConfig } from "@/config/contracts";
 
 interface PayoutItem {
   id: string;
@@ -35,7 +35,7 @@ export default function AdminPage() {
   const [authenticating, setAuthenticating] = useState(false);
 
   const isAdmin = isPublicAdminWallet(address);
-  const chainConfig = chainId === 56 ? CONTRACT_ADDRESSES[56] : CONTRACT_ADDRESSES[97];
+  const chainConfig = getContractConfig(chainId) ?? CONTRACT_ADDRESSES[56];
 
   const handleAdminLogin = async () => {
     if (!address) return;
@@ -556,9 +556,9 @@ export default function AdminPage() {
             </div>
 
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-              <span className="text-slate-400">Mint Oracle Reference:</span>
-              <div className="text-xl font-bold text-[#00FF66]">$0.20 USD</div>
-              <p className="text-[11px] text-slate-500">Chainlink BNB/USD Aggregator.</p>
+              <span className="text-slate-400">Mint Platform Fee:</span>
+              <div className="text-xl font-bold text-[#00FF66]">$0.10 / NFT</div>
+              <p className="text-[11px] text-slate-500">Minting is free; gas is paid separately.</p>
             </div>
           </div>
         </div>

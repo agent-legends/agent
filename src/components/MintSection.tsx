@@ -1,290 +1,404 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
+  useBalance,
   useChainId,
+  useEstimateGas,
+  useEstimateFeesPerGas,
   useReadContract,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
-import { formatEther, isAddress } from "viem";
+import { bsc, bscTestnet } from "wagmi/chains";
+import { encodeFunctionData, formatEther, isAddress } from "viem";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, Shield, AlertCircle, CheckCircle2, ExternalLink, Users, ChevronUp, ChevronDown } from "lucide-react";
-import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI } from "@/config/contracts";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  LoaderCircle,
+  Shield,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { NFT_ABI } from "@/config/abis/nft";
+import { AGENT_REGISTRY_ABI } from "@/config/abis/agentRegistry";
+import { getContractConfig } from "@/config/contracts";
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const MAX_MINT_PER_TRANSACTION = 20;
 
 export function MintSection() {
-  const { isConnected, address } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const searchParams = useSearchParams();
-
-  const [quantity, setQuantity] = useState<number>(1);
-  const [referrer, setReferrer] = useState<string>("");
-  const [referrerError, setReferrerError] = useState<string | null>(null);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const [quantity, setQuantity] = useState(1);
+  const [referrer, setReferrer] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncedHash, setSyncedHash] = useState<string | null>(null);
+  const [syncAttemptedHash, setSyncAttemptedHash] = useState<string | null>(null);
 
-  // Read referrer from URL if present
+  const config = getContractConfig(chainId);
+  const supportedChainId = chainId === 56 || chainId === 97 ? chainId : undefined;
+  const nftAddress = config && isAddress(config.nft) ? config.nft : undefined;
+  const registryAddress = config && isAddress(config.registry) ? config.registry : undefined;
+
   useEffect(() => {
-    const refParam = searchParams.get("ref");
-    if (refParam && isAddress(refParam)) {
-      setReferrer(refParam);
-    }
+    const referral = searchParams.get("ref");
+    if (referral && isAddress(referral)) setReferrer(referral);
   }, [searchParams]);
 
-  const activeContractConfig =
-    chainId === 56 ? CONTRACT_ADDRESSES[56] : chainId === 97 ? CONTRACT_ADDRESSES[97] : null;
-  const nftAddress =
-    activeContractConfig && isAddress(activeContractConfig.nft)
-      ? (activeContractConfig.nft as `0x${string}`)
-      : undefined;
-  const { data: unitPriceWei, isLoading: isPriceLoading, error: priceError } = useReadContract({
+  const { data: feeWei, isLoading: isQuoteLoading, error: quoteError } = useReadContract({
     address: nftAddress,
-    abi: AGENT_LEGENDS_NFT_ABI,
-    functionName: "getMintPriceInWei",
+    abi: NFT_ABI,
+    functionName: "quotePlatformFee",
+    args: [BigInt(quantity)],
     query: { enabled: Boolean(nftAddress) },
   });
+  const { data: mintedSupply } = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "totalMinted",
+    query: { enabled: Boolean(nftAddress) },
+  });
+  const { data: maxSupply } = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "MAX_SUPPLY",
+    query: { enabled: Boolean(nftAddress) },
+  });
+  const { data: configuredRegistry } = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "agentRegistry",
+    query: { enabled: Boolean(nftAddress) },
+  });
+  const { data: verificationEnabled } = useReadContract({
+    address: nftAddress,
+    abi: NFT_ABI,
+    functionName: "agentVerificationEnabled",
+    query: { enabled: Boolean(nftAddress) },
+  });
+  const registryMatches =
+    Boolean(configuredRegistry && registryAddress) &&
+    configuredRegistry?.toLowerCase() === registryAddress?.toLowerCase();
+  const { data: registryBalance, isLoading: isCheckingEligibility } = useReadContract({
+    address: registryMatches ? registryAddress : undefined,
+    abi: AGENT_REGISTRY_ABI,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: {
+      enabled: Boolean(address && verificationEnabled && registryMatches),
+    },
+  });
 
-  const { data: hash, isPending: isMintPending, error: mintError, writeContract } = useWriteContract();
+  const mintCalldata = useMemo(() => {
+    if (!nftAddress) return undefined;
+    return encodeFunctionData({
+      abi: NFT_ABI,
+      functionName: "mint",
+      args: [BigInt(quantity), (referrer && isAddress(referrer) ? referrer : ZERO_ADDRESS) as `0x${string}`],
+    });
+  }, [nftAddress, quantity, referrer]);
+  const { data: gasEstimate, error: gasEstimateError } = useEstimateGas({
+    account: address,
+    to: nftAddress,
+    data: mintCalldata,
+    value: feeWei,
+    query: { enabled: Boolean(address && nftAddress && mintCalldata && feeWei !== undefined) },
+  });
+  const { data: gasFees } = useEstimateFeesPerGas({
+    chainId: supportedChainId,
+    query: { enabled: Boolean(supportedChainId) },
+  });
+  const gasPriceEstimate = gasFees?.gasPrice ?? gasFees?.maxFeePerGas;
+  const gasCostEstimate =
+    gasEstimate !== undefined && gasPriceEstimate !== undefined
+      ? gasEstimate * gasPriceEstimate
+      : undefined;
+  const { data: balance } = useBalance({
+    address,
+    chainId: supportedChainId,
+    query: { enabled: Boolean(address && supportedChainId) },
+  });
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
+  const {
+    data: transactionHash,
+    error: walletError,
+    isPending: isWalletPending,
+    writeContractAsync,
+  } = useWriteContract();
+  const {
+    error: receiptError,
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({
+    hash: transactionHash,
     confirmations: 3,
   });
 
-  const totalPriceWei = unitPriceWei ? unitPriceWei * BigInt(quantity) : undefined;
-  const totalBnb = totalPriceWei ? formatEther(totalPriceWei) : null;
+  const remainingSupply =
+    mintedSupply !== undefined && maxSupply !== undefined
+      ? maxSupply > mintedSupply
+        ? maxSupply - mintedSupply
+        : 0n
+      : undefined;
+  const hasEnoughSupply =
+    remainingSupply !== undefined && remainingSupply >= BigInt(quantity);
+  const hasEnoughBalance =
+    balance !== undefined &&
+    feeWei !== undefined &&
+    balance.value >= feeWei + (gasCostEstimate ?? 0n);
+  const requiresAgentId = verificationEnabled === true;
+  const isEligible =
+    !requiresAgentId || (registryMatches && registryBalance !== undefined && registryBalance > 0n);
+  const isBusy = isWalletPending || isConfirming;
+  const canMint =
+    Boolean(isConnected && address && nftAddress && feeWei !== undefined) &&
+    verificationEnabled !== undefined &&
+    hasEnoughSupply &&
+    hasEnoughBalance &&
+    isEligible &&
+    !isBusy;
+
+  const syncMint = useCallback(async (hash: `0x${string}`) => {
+    setSyncError(null);
+    try {
+      const response = await fetch("/api/mint/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: address, txHash: hash }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Mint data could not be synchronized.");
+    } catch (error: unknown) {
+      setSyncError(error instanceof Error ? error.message : "Mint data could not be synchronized.");
+    }
+  }, [address]);
 
   useEffect(() => {
-    if (!isConfirmed || !hash || !address || syncedHash === hash) return;
-    setSyncedHash(hash);
-    setSyncMessage(null);
-    setSyncError(null);
-    fetch("/api/mint/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: address, txHash: hash }),
-    })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Mint record could not be synchronized.");
-        setSyncMessage("Mint and referral records have been synchronized.");
-      })
-      .catch((error: unknown) => {
-        setSyncError(error instanceof Error ? error.message : "Mint record could not be synchronized.");
-      });
-  }, [isConfirmed, hash, address, syncedHash]);
-
-  const handleReferrerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.trim();
-    setReferrer(val);
-    if (val && !isAddress(val)) {
-      setReferrerError("Invalid BSC wallet address format");
-    } else if (address && val.toLowerCase() === address.toLowerCase()) {
-      setReferrerError("Self-referrals are prohibited by smart contract");
-    } else {
-      setReferrerError(null);
-    }
-  };
+    if (!isConfirmed || !transactionHash || !address || syncAttemptedHash === transactionHash) return;
+    setSyncAttemptedHash(transactionHash);
+    void syncMint(transactionHash);
+  }, [isConfirmed, transactionHash, address, syncAttemptedHash, syncMint]);
 
   const handleMint = async () => {
-    if (!isConnected) return;
-    if (!activeContractConfig || !nftAddress || !unitPriceWei || !totalPriceWei) {
-      setReferrerError(
-        priceError?.message || "A supported BNB Chain and a configured NFT contract are required."
+    setFormError(null);
+    if (!address || !nftAddress || !feeWei) {
+      setFormError("Connect a wallet and wait for the on-chain platform-fee quote.");
+      return;
+    }
+    if (verificationEnabled === undefined) {
+      setFormError("Wait for the NFT contract's eligibility requirement to load.");
+      return;
+    }
+    if (referrer && (!isAddress(referrer) || referrer.toLowerCase() === address.toLowerCase())) {
+      setFormError("Enter a valid referral wallet, or leave this field empty. Self-referrals are not allowed.");
+      return;
+    }
+    if (!hasEnoughSupply) {
+      setFormError("The requested quantity exceeds the remaining on-chain supply.");
+      return;
+    }
+    if (!hasEnoughBalance) {
+      setFormError("Your BNB balance does not cover the platform fee. Gas is charged separately.");
+      return;
+    }
+    if (!isEligible) {
+      setFormError(
+        requiresAgentId
+          ? "This contract requires an eligible Agent ID. Verify ownership in the configured registry."
+          : "The NFT contract and configured Agent ID registry do not match."
       );
       return;
     }
-    if (referrer && (!isAddress(referrer) || referrer.toLowerCase() === address?.toLowerCase())) {
-      setReferrerError("Please enter a valid, non-self referrer address or leave empty.");
-      return;
+    try {
+      await writeContractAsync({
+        address: nftAddress,
+        abi: NFT_ABI,
+        functionName: "mint",
+        args: [
+          BigInt(quantity),
+          (referrer ? referrer : ZERO_ADDRESS) as `0x${string}`,
+        ],
+        value: feeWei,
+      });
+    } catch (error: unknown) {
+      setFormError(error instanceof Error ? error.message : "The wallet rejected the mint transaction.");
     }
-
-    const effectiveReferrer = referrer && isAddress(referrer) ? (referrer as `0x${string}`) : "0x0000000000000000000000000000000000000000";
-    (writeContract as any)({
-      address: nftAddress,
-      abi: AGENT_LEGENDS_NFT_ABI,
-      functionName: "mint",
-      args: [BigInt(quantity), effectiveReferrer],
-      value: totalPriceWei,
-    });
   };
 
+  const formattedFee = feeWei === undefined ? null : formatEther(feeWei);
+  const errorMessage =
+    formError || walletError?.message || receiptError?.message || quoteError?.message;
+
   return (
-    <div className="w-full max-w-xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-[#00FF66]/30 shadow-neon-green relative">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-1">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono font-bold tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-[#00FF66]" />
-            <span>GENESIS RECRUITMENT</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-wider font-mono">
-            Recruit Tactical Agents
-          </h2>
-          <p className="text-xs text-slate-400">
-            The contract reads the current Chainlink BNB/USD feed for the $0.20 USD-equivalent mint price.
-          </p>
-        </div>
+    <section className="mint-shell" aria-labelledby="mint-title">
+      <header className="mint-heading">
+        <span className="page-kicker"><Sparkles aria-hidden="true" /> BNB Smart Chain · ERC-721</span>
+        <h2 id="mint-title">Claim your legend</h2>
+        <p>Minting is free. The on-chain quote covers the platform fee only; blockchain gas is separate.</p>
+      </header>
 
-        {/* Quantity Selector */}
-        <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-slate-300 font-bold uppercase">Quantity (Max 20 / TX)</span>
-            <span className="text-xs font-mono text-[#00FF66]">10,000 Max Supply</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center transition-colors"
-                disabled={quantity <= 1 || isMintPending || isConfirming}
-              >
-                <ChevronDown className="w-5 h-5" />
-              </button>
-              <span className="w-12 text-center text-2xl font-black text-white font-mono">{quantity}</span>
-              <button
-                onClick={() => setQuantity(Math.min(20, quantity + 1))}
-                className="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-bold flex items-center justify-center transition-colors"
-                disabled={quantity >= 20 || isMintPending || isConfirming}
-              >
-                <ChevronUp className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Quick buttons */}
-            <div className="flex space-x-1.5">
-              {[1, 5, 10, 20].map((num) => (
-                <button
-                  key={num}
-                  onClick={() => setQuantity(num)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
-                    quantity === num
-                      ? "bg-[#00FF66] text-[#07090E] shadow-neon-green"
-                      : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
-                  }`}
-                  disabled={isMintPending || isConfirming}
-                >
-                  {num}X
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Referrer Input */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-mono text-slate-300 font-semibold flex items-center justify-between">
-            <span className="flex items-center space-x-1.5">
-              <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
-              <span>Referral Wallet (Optional)</span>
-            </span>
-            <span className="text-[10px] text-slate-500 font-normal">3 Referrals = 1 Free NFT</span>
-          </label>
-          <input
-            type="text"
-            value={referrer}
-            onChange={handleReferrerChange}
-            placeholder="0x..."
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-[#00FF66]/50 transition-colors"
-            disabled={isMintPending || isConfirming}
-          />
-          {referrerError && <p className="text-[11px] text-red-400 font-mono">{referrerError}</p>}
-        </div>
-
-        {/* Price Breakdown */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800/80 space-y-2 text-xs font-mono">
-          <div className="flex justify-between text-slate-400">
-            <span>Price per NFT:</span>
-            <span className="text-white font-bold">
-              {unitPriceWei ? `$0.20 USD (${formatEther(unitPriceWei)} BNB)` : "Oracle quote unavailable"}
-            </span>
-          </div>
-          <div className="flex justify-between text-slate-400">
-            <span>Quantity:</span>
-            <span className="text-white font-bold">{quantity} Operatives</span>
-          </div>
-          <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline">
-            <span className="text-slate-300 font-bold uppercase">Total Cost:</span>
-            <div className="text-right">
-              <span className="text-lg font-black text-[#00FF66]">
-                {totalBnb ? `${totalBnb} BNB` : isPriceLoading ? "Loading oracle quote..." : "Unavailable"}
-              </span>
-              <span className="block text-[10px] text-slate-500 font-normal">
-                (${(quantity * 0.20).toFixed(2)} USD)
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Mint Button */}
-        <button
-          onClick={handleMint}
-          disabled={!isConnected || !totalPriceWei || isMintPending || isConfirming}
-          className={`w-full py-4 rounded-2xl font-black font-mono tracking-wider uppercase text-sm transition-all flex items-center justify-center space-x-2 ${
-            !isConnected
-              ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-              : isMintPending || isConfirming
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait"
-              : "bg-gradient-to-r from-[#00FF66] to-[#00CC52] text-[#07090E] hover:scale-[1.02] shadow-neon-green"
-          }`}
-        >
-          <Shield className="w-5 h-5" />
-          <span>
-            {!isConnected
-              ? "Connect Wallet to Mint"
-              : isMintPending
-              ? "Confirm in Wallet..."
-              : isConfirming
-              ? "Recruiting on BNB Chain..."
-              : totalBnb
-              ? `Mint ${quantity} Agent${quantity > 1 ? "s" : ""} (${totalBnb} BNB)`
-              : "Oracle Quote Unavailable"}
-          </span>
-        </button>
-
-        {/* Transaction Status Feedback */}
-        {mintError && (
-          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-            <span className="break-all font-mono">
-              {mintError.message.includes("InsufficientBnbPayment")
-                ? "Transaction reverted: Insufficient BNB sent."
-                : mintError.message.includes("ExceedsMaxSupply")
-                ? "Sold out: Exceeds 10,000 maximum collection supply."
-                : mintError.message.slice(0, 160)}
-            </span>
-          </div>
-        )}
-        {syncError && (
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
-            Mint succeeded on-chain, but dashboard indexing failed: {syncError}. Retry the transaction sync before relying on referral statistics.
-          </div>
-        )}
-
-        {isConfirmed && hash && activeContractConfig && (
-          <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 text-xs space-y-2">
-            <div className="flex items-center space-x-2 font-bold font-mono">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Recruitment Confirmed on BNB Smart Chain!</span>
-            </div>
-            <p className="text-slate-300">
-              Successfully minted {quantity} Agent Legends NFT{quantity > 1 ? "s" : ""}. {syncMessage || "Synchronizing referral and dashboard records..."}
-            </p>
-            <a
-              href={`${activeContractConfig.explorer}/tx/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-[#00FF66] hover:underline font-mono text-[11px]"
-            >
-              <span>View on BSCScan</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        )}
+      <div className="mint-fee-banner" role="note">
+        <strong>FREE NFT MINT</strong>
+        <span>$0.10 platform fee per NFT in BNB, plus gas</span>
       </div>
-    </div>
+
+      {!isConnected ? (
+        <p className="mint-status-note">Connect a wallet to read the live contract quote and continue.</p>
+      ) : !config ? (
+        <div className="mint-warning" role="alert">
+          This wallet is on an unsupported network. Switch to BNB Smart Chain to mint.
+          <button type="button" onClick={() => switchChain({ chainId: 56 })} disabled={isSwitching}>
+            {isSwitching ? "Switching…" : "Switch to BNB Chain"}
+          </button>
+        </div>
+      ) : !nftAddress ? (
+        <p className="mint-warning" role="alert">The NFT contract is not configured for this network.</p>
+      ) : (
+        <>
+          <div className="mint-supply-row" aria-live="polite">
+            <span>On-chain supply</span>
+            <strong>
+              {mintedSupply !== undefined && maxSupply !== undefined
+                ? `${mintedSupply.toLocaleString()} / ${maxSupply.toLocaleString()}`
+                : "Loading contract data…"}
+            </strong>
+          </div>
+
+          <div className="mint-quantity-control">
+            <div>
+              <span className="mint-field-label">Quantity</span>
+              <span className="mint-field-hint">Up to {MAX_MINT_PER_TRANSACTION} per transaction</span>
+            </div>
+            <div className="mint-stepper">
+              <button
+                type="button"
+                aria-label="Decrease quantity"
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                disabled={quantity <= 1 || isBusy}
+              >
+                <ChevronDown aria-hidden="true" />
+              </button>
+              <output aria-label="Selected quantity">{quantity}</output>
+              <button
+                type="button"
+                aria-label="Increase quantity"
+                onClick={() => setQuantity((value) => Math.min(MAX_MINT_PER_TRANSACTION, value + 1))}
+                disabled={quantity >= MAX_MINT_PER_TRANSACTION || isBusy}
+              >
+                <ChevronUp aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mint-referral-control">
+            <label htmlFor="referrer">
+              <Users aria-hidden="true" /> Referral wallet <span>(optional)</span>
+            </label>
+            <input
+              id="referrer"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="0x..."
+              value={referrer}
+              onChange={(event) => setReferrer(event.target.value.trim())}
+              disabled={isBusy}
+            />
+            {referrer && isAddress(referrer) && address && referrer.toLowerCase() === address.toLowerCase() && (
+              <span className="mint-inline-error">Self-referrals are not allowed.</span>
+            )}
+          </div>
+
+          <dl className="mint-cost-breakdown">
+            <div><dt>NFT purchase price</dt><dd>$0.00</dd></div>
+            <div><dt>Platform fee</dt><dd>{formattedFee ? `${formattedFee} BNB` : isQuoteLoading ? "Quoting…" : "Unavailable"}</dd></div>
+            <div><dt>Fee USD reference</dt><dd>${(quantity * 0.1).toFixed(2)} USD</dd></div>
+            <div>
+              <dt>Estimated gas</dt>
+              <dd>
+                {gasCostEstimate !== undefined
+                  ? `${formatEther(gasCostEstimate)} BNB (${gasEstimate?.toString()} units)`
+                  : gasEstimate !== undefined
+                    ? `${gasEstimate.toString()} units; fee unavailable`
+                  : gasEstimateError
+                    ? "Estimate unavailable"
+                    : "Estimating…"}
+              </dd>
+            </div>
+            <div>
+              <dt>Estimated total</dt>
+              <dd>
+                {feeWei === undefined
+                  ? "Waiting for quote…"
+                  : gasCostEstimate === undefined
+                    ? `${formattedFee} BNB + gas`
+                    : `${formatEther(feeWei + gasCostEstimate)} BNB`}
+              </dd>
+            </div>
+            <div className="mint-cost-total"><dt>Wallet balance</dt><dd>{balance ? `${Number(balance.formatted).toFixed(5)} BNB` : "Loading…"}</dd></div>
+          </dl>
+          <p className="mint-gas-note">
+            The platform fee is not the NFT purchase price. BNB gas is paid separately to the network.
+          </p>
+
+          {requiresAgentId && (
+            <p className={`mint-eligibility ${isEligible ? "is-eligible" : ""}`} role="status">
+              <Shield aria-hidden="true" />
+              {isCheckingEligibility
+                ? "Checking Agent ID ownership…"
+                : !registryMatches
+                  ? "The verified NFT and supplied Agent ID registry addresses do not match."
+                  : isEligible
+                    ? "Agent ID eligibility verified on-chain."
+                    : "An eligible Agent ID is required by this contract."}
+            </p>
+          )}
+
+          <button type="button" className="mint-submit" onClick={handleMint} disabled={!canMint}>
+            {isWalletPending ? (
+              <><LoaderCircle className="animate-spin" aria-hidden="true" /> Confirm in wallet</>
+            ) : isConfirming ? (
+              <><LoaderCircle className="animate-spin" aria-hidden="true" /> Confirming on BNB Chain</>
+            ) : (
+              <><Sparkles aria-hidden="true" /> Mint {quantity} {quantity === 1 ? "NFT" : "NFTs"} · free + fee</>
+            )}
+          </button>
+        </>
+      )}
+
+      {errorMessage && (
+        <p className="mint-error" role="alert">
+          <AlertCircle aria-hidden="true" /> {errorMessage}
+        </p>
+      )}
+
+      {isConfirmed && transactionHash && config && (
+        <div className="mint-success" role="status">
+          <CheckCircle2 aria-hidden="true" />
+          <div>
+            <strong>Transaction confirmed</strong>
+            <p>Your mint is confirmed on-chain. Newly minted NFTs will appear after ownership data refreshes.</p>
+            <a href={`${config.explorer}/tx/${transactionHash}`} target="_blank" rel="noopener noreferrer">
+              View transaction <ExternalLink aria-hidden="true" />
+            </a>
+            {syncError && (
+              <p>
+                Dashboard sync: {syncError}{" "}
+                <button type="button" onClick={() => void syncMint(transactionHash)}>Retry sync</button>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

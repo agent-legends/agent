@@ -8,13 +8,14 @@ import {
   useChainId,
 } from "wagmi";
 import { Users, Copy, Check, Gift, Crown, Trophy, Sparkles, ExternalLink, AlertCircle } from "lucide-react";
-import { CONTRACT_ADDRESSES, AGENT_LEGENDS_NFT_ABI } from "@/config/contracts";
-import { bsc, bscTestnet } from "wagmi/chains";
+import { getContractConfig } from "@/config/contracts";
+import { NFT_ABI } from "@/config/abis/nft";
+import { isAddress } from "viem";
 
 interface ReferralUserStats {
   walletAddress: string;
   referralsCount: number;
-  referredNftCount: number;
+  referredNftCount: number | null;
   earnedFreeNfts: number;
   claimedFreeNfts: number;
   unclaimedFreeNfts: number;
@@ -37,10 +38,10 @@ export function ReferralSection() {
   const [stats, setStats] = useState<ReferralUserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [syncedHash, setSyncedHash] = useState<string | null>(null);
 
-  const activeContractConfig =
-    chainId === 56 ? CONTRACT_ADDRESSES[56] : chainId === 97 ? CONTRACT_ADDRESSES[97] : null;
+  const activeContractConfig = getContractConfig(chainId);
 
   const { data: hash, isPending: isClaimPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -59,9 +60,10 @@ export function ReferralSection() {
       .then((data) => {
         if (data.userStats) setStats(data.userStats);
         if (data.leaderboard) setLeaderboard(data.leaderboard);
+        setDataError(data.leaderboardError || null);
       })
       .catch((error: unknown) => {
-        setClaimError(error instanceof Error ? error.message : "Referral data could not be loaded.");
+        setDataError(error instanceof Error ? error.message : "Referral data could not be loaded.");
       });
   };
 
@@ -99,7 +101,7 @@ export function ReferralSection() {
 
   const handleClaimFreeNft = async () => {
     if (!stats || stats.unclaimedFreeNfts <= 0) return;
-    if (!address || !activeContractConfig) {
+    if (!address || !activeContractConfig || !isAddress(activeContractConfig.nft)) {
       setClaimError("Connect a wallet on BNB Smart Chain to claim.");
       return;
     }
@@ -107,11 +109,8 @@ export function ReferralSection() {
     try {
       await writeContractAsync({
         address: activeContractConfig.nft as `0x${string}`,
-        account: address,
-        chain: chainId === 56 ? bsc : bscTestnet,
-        abi: AGENT_LEGENDS_NFT_ABI,
-        functionName: "claimReferralRewards",
-        args: [BigInt(1)],
+        abi: NFT_ABI,
+        functionName: "claimReferralNFT",
       });
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -152,7 +151,7 @@ export function ReferralSection() {
               <div className="w-[1px] h-8 bg-slate-800" />
               <div className="text-center px-2">
                 <span className="block text-slate-500 text-[10px]">NFTS MINTED</span>
-                <span className="text-base font-black text-[#00E5FF]">{stats.referredNftCount}</span>
+                <span className="text-base font-black text-[#00E5FF]">{stats.referredNftCount ?? "—"}</span>
               </div>
               <div className="w-[1px] h-8 bg-slate-800" />
               <div className="text-center px-2">
@@ -234,10 +233,10 @@ export function ReferralSection() {
           </div>
         )}
 
-        {claimError && (
+        {(claimError || dataError) && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center space-x-2 font-mono">
             <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span>{claimError}</span>
+            <span>{claimError || dataError}</span>
           </div>
         )}
       </div>

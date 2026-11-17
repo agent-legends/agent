@@ -1,0 +1,112 @@
+export const STAKING_ABI = [
+  {
+    type: "function",
+    name: "stake",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "unstake",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "stakeInfo",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "staker", type: "address" },
+      { name: "stakedAt", type: "uint256" },
+    ],
+  },
+  {
+    type: "function",
+    name: "getStakeTimeRemaining",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "STAKING_LOCK",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "spinCredits",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "hasReceivedInitialSpin",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "consumeSpinCredit",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "nft",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "event",
+    name: "NFTStaked",
+    anonymous: false,
+    inputs: [
+      { name: "user", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "receivedInitialSpin", type: "bool", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "NFTUnstaked",
+    anonymous: false,
+    inputs: [
+      { name: "user", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    name: "SpinCreditAdded",
+    anonymous: false,
+    inputs: [
+      { name: "user", type: "address", indexed: true },
+      { name: "totalCredits", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "SpinCreditConsumed",
+    anonymous: false,
+    inputs: [
+      { name: "user", type: "address", indexed: true },
+      { name: "remainingCredits", type: "uint256", indexed: false },
+    ],
+  },
+] as const;

@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import { MintSection } from "@/components/MintSection";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
-import { Shield, Sparkles, CheckCircle2 } from "lucide-react";
+import { Sparkles, CheckCircle2 } from "lucide-react";
 
 export default function MintPage() {
   return (
@@ -13,8 +13,8 @@ export default function MintPage() {
 
       <PageIntro
         eyebrow="The collection"
-        title="Mint Agent Legends"
-        description="A 10,000 NFT maximum supply. The contract calculates the $0.20 USD-equivalent mint price in BNB using its Chainlink price feed."
+        title="Mint your Agent Legend"
+        description="The NFT mint is free. Pay the live on-chain quote for a $0.10 platform fee per NFT in BNB, plus blockchain gas."
         icon={Sparkles}
       />
 
@@ -29,10 +29,10 @@ export default function MintPage() {
             <CheckCircle2 className="w-4 h-4" />
           </div>
           <h4 className="text-xs font-mono font-bold text-white uppercase">
-            Chainlink Oracle Pricing
+            Live platform-fee quote
           </h4>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Mint price is locked at $0.20 USD equivalent in BNB. Real-time Chainlink feed prevents price exploitation and checks for staleness.
+            The deployed NFT contract quotes the BNB platform fee on-chain. The NFT itself has no purchase price; gas is separate.
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export default function MintPage() {
             <CheckCircle2 className="w-4 h-4" />
           </div>
           <h4 className="text-xs font-mono font-bold text-white uppercase">
-            Immediate Staking Yield
+            One-Time Spin Credit
           </h4>
           <p className="text-[11px] text-slate-400 leading-relaxed">
             Every newly recruited agent generates exactly one spin credit on its first stake in the 72-hour contract vault.

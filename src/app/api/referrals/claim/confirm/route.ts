@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { createPublicClient, http, isAddress, parseAbiItem } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { getContractConfig } from "@/config/contracts";
 import { prisma } from "@/lib/db";
 
 const CLAIM_EVENT = parseAbiItem(
-  "event ReferralRewardClaimed(address indexed referrer, uint256 quantity, uint256 startTokenId)"
+  "event ReferralNFTClaimed(address indexed account, uint256 indexed tokenId)"
 );
 const MIN_CONFIRMATIONS = 3n;
 
@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid wallet address or transaction hash." }, { status: 400 });
   }
 
-  const chainId = Number(process.env.BSC_CHAIN_ID || "97");
+  const chainId = Number(process.env.BSC_CHAIN_ID || "56");
   if (chainId !== 56 && chainId !== 97) {
     return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
   }
-  const config = CONTRACT_ADDRESSES[chainId];
-  if (!isAddress(config.nft)) {
+  const config = getContractConfig(chainId);
+  if (!config || !isAddress(config.nft)) {
     return NextResponse.json({ error: "NFT contract address is not configured for this chain." }, { status: 503 });
   }
 
@@ -50,10 +50,7 @@ export async function POST(req: NextRequest) {
   try {
     const recorded = await prisma.transaction.findUnique({ where: { txHash: normalizedHash } });
     if (recorded) {
-      if (
-        recorded.walletAddress !== normalizedWallet ||
-        recorded.type !== "CLAIM_REFERRAL_NFT"
-      ) {
+      if (recorded.walletAddress !== normalizedWallet || recorded.type !== "CLAIM_REFERRAL_NFT") {
         return NextResponse.json({ error: "Transaction hash is already associated with another record." }, { status: 409 });
       }
       return NextResponse.json({ success: true, alreadyRecorded: true });
@@ -85,25 +82,25 @@ export async function POST(req: NextRequest) {
     const claims = claimLogs.filter(
       (log) =>
         log.transactionHash.toLowerCase() === normalizedHash &&
-        log.args.referrer.toLowerCase() === normalizedWallet
+        log.args.account.toLowerCase() === normalizedWallet
     );
-    if (claims.length !== 1 || claims[0].args.quantity < 1n) {
+    if (claims.length !== 1) {
       return NextResponse.json({ error: "A unique referral NFT claim event was not found." }, { status: 422 });
     }
 
-    const { quantity, startTokenId } = claims[0].args;
+    const tokenId = claims[0].args.tokenId.toString();
     await prisma.$transaction(
       async (tx) => {
         await tx.user.upsert({
           where: { walletAddress: normalizedWallet },
           create: {
             walletAddress: normalizedWallet,
-            totalMints: Number(quantity),
-            claimedFreeNfts: Number(quantity),
+            totalMints: 1,
+            claimedFreeNfts: 1,
           },
           update: {
-            totalMints: { increment: Number(quantity) },
-            claimedFreeNfts: { increment: Number(quantity) },
+            totalMints: { increment: 1 },
+            claimedFreeNfts: { increment: 1 },
           },
         });
         await tx.transaction.create({
@@ -111,26 +108,19 @@ export async function POST(req: NextRequest) {
             txHash: normalizedHash,
             walletAddress: normalizedWallet,
             type: "CLAIM_REFERRAL_NFT",
-            amount: quantity.toString(),
-            metadata: JSON.stringify({ quantity: quantity.toString(), startTokenId: startTokenId.toString() }),
+            amount: "1",
+            metadata: JSON.stringify({ quantity: "1", tokenId }),
           },
         });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
 
-    return NextResponse.json({
-      success: true,
-      quantity: quantity.toString(),
-      startTokenId: startTokenId.toString(),
-    });
+    return NextResponse.json({ success: true, quantity: "1", tokenId });
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const existing = await prisma.transaction.findUnique({ where: { txHash: normalizedHash } });
-      if (
-        existing?.walletAddress === normalizedWallet &&
-        existing.type === "CLAIM_REFERRAL_NFT"
-      ) {
+      if (existing?.walletAddress === normalizedWallet && existing.type === "CLAIM_REFERRAL_NFT") {
         return NextResponse.json({ success: true, alreadyRecorded: true });
       }
       return NextResponse.json({ error: "Transaction was already recorded." }, { status: 409 });

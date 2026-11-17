@@ -10,7 +10,7 @@ export function Footer() {
         <div className="site-footer-grid">
           <section>
             <h2>Agent Legends</h2>
-            <p className="flex items-center gap-2 font-semibold text-slate-800">
+            <p className="flex items-center gap-2 font-semibold text-slate-100">
               <Shield className="h-5 w-5 text-[#00FF66]" aria-hidden="true" />
               Agent Legends 2.0
             </p>
@@ -24,6 +24,7 @@ export function Footer() {
             <h2>Explore</h2>
             <ul>
               <li><Link href="/mint">Mint an NFT</Link></li>
+              <li><Link href="/explore">Explore collection</Link></li>
               <li><Link href="/my-nfts">My collection</Link></li>
               <li><Link href="/staking">Staking</Link></li>
               <li><Link href="/spin">Spin rewards</Link></li>
@@ -35,7 +36,7 @@ export function Footer() {
             <h2>Protocol rules</h2>
             <ul>
               <li>10,000 NFT maximum supply</li>
-              <li>$0.20 USD mint price, converted to BNB</li>
+              <li>Free mint; $0.10 BNB platform fee per NFT, plus gas</li>
               <li>72-hour staking lock</li>
               <li>3 successful referrals unlock 1 free NFT</li>
               <li>USDT payouts are manually verified</li>

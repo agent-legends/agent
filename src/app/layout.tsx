@@ -5,9 +5,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Agent Legends | Collect, Stake & Earn on BNB Chain",
+  title: "Agent Legends | Free NFT Mint on BNB Chain",
   description:
-    "Collect Agent Legends NFTs on BNB Smart Chain, stake for spin credits, earn referral rewards, and track manually verified USDT payouts.",
+    "Mint a free Agent Legends NFT on BNB Smart Chain. A separate $0.10 platform fee per NFT and network gas apply.",
   keywords: [
     "Agent Legends",
     "BNB Chain",

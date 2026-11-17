@@ -205,7 +205,7 @@ export function SpinWheel() {
       <div className="w-full max-w-2xl mb-8 p-3 rounded-xl bg-slate-900/80 border border-[#00FF66]/20 flex items-center justify-between text-xs text-slate-300">
         <div className="flex items-center space-x-2">
           <span>
-            USDT payout status is updated after the transfer is confirmed on BNB Smart Chain.
+            Results use server-side randomness, not VRF. Spin use is recorded in the app ledger; USDT payouts update after an on-chain transfer is verified.
           </span>
         </div>
         <button
