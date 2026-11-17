@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, isAddress } from "viem";
+import { createPublicClient, http, isAddress, type Address } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { getContractConfig } from "@/config/contracts";
 import { NFT_ABI } from "@/config/abis/nft";
@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   if (!config || !isAddress(config.nft)) {
     return NextResponse.json({ error: "NFT contract address is not configured for this chain." }, { status: 503 });
   }
+  const nftAddress = config.nft as Address;
 
   const client = createPublicClient({
     chain: chainId === 56 ? bsc : bscTestnet,
@@ -30,14 +31,14 @@ export async function GET(req: NextRequest) {
     if (wallet) {
       const [successfulReferrals, unclaimedFreeNfts] = await Promise.all([
         client.readContract({
-          address: config.nft,
+          address: nftAddress,
           abi: NFT_ABI,
           functionName: "successfulReferrals",
           args: [wallet as `0x${string}`],
           authorizationList: undefined,
         }),
         client.readContract({
-          address: config.nft,
+          address: nftAddress,
           abi: NFT_ABI,
           functionName: "referralNFTCredits",
           args: [wallet as `0x${string}`],
@@ -91,14 +92,14 @@ export async function GET(req: NextRequest) {
         trackedUsers.map(async (trackedUser) => {
           const [referrals, credits] = await Promise.all([
             client.readContract({
-              address: config.nft,
+              address: nftAddress,
               abi: NFT_ABI,
               functionName: "successfulReferrals",
               args: [trackedUser.walletAddress as `0x${string}`],
               authorizationList: undefined,
             }),
             client.readContract({
-              address: config.nft,
+              address: nftAddress,
               abi: NFT_ABI,
               functionName: "referralNFTCredits",
               args: [trackedUser.walletAddress as `0x${string}`],
