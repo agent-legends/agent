@@ -221,6 +221,8 @@ export function MintSection() {
     try {
       await writeContractAsync({
         address: nftAddress,
+        account: address,
+        chain: chainId === 97 ? bscTestnet : bsc,
         abi: NFT_ABI,
         functionName: "mint",
         args: [
