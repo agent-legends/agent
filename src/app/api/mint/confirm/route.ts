@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
         abi: NFT_ABI,
         functionName: "referrerOf",
         args: [normalizedWallet as `0x${string}`],
+        authorizationList: undefined,
       }),
     ]);
     const mintEvents = mintLogs.filter(

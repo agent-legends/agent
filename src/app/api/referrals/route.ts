@@ -34,12 +34,14 @@ export async function GET(req: NextRequest) {
           abi: NFT_ABI,
           functionName: "successfulReferrals",
           args: [wallet as `0x${string}`],
+          authorizationList: undefined,
         }),
         client.readContract({
           address: config.nft,
           abi: NFT_ABI,
           functionName: "referralNFTCredits",
           args: [wallet as `0x${string}`],
+          authorizationList: undefined,
         }),
       ]);
       let referredNftCount: number | null = null;
@@ -93,12 +95,14 @@ export async function GET(req: NextRequest) {
               abi: NFT_ABI,
               functionName: "successfulReferrals",
               args: [trackedUser.walletAddress as `0x${string}`],
+              authorizationList: undefined,
             }),
             client.readContract({
               address: config.nft,
               abi: NFT_ABI,
               functionName: "referralNFTCredits",
               args: [trackedUser.walletAddress as `0x${string}`],
+              authorizationList: undefined,
             }),
           ]);
           const successfulReferrals = Number(referrals);

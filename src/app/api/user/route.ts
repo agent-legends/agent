@@ -52,18 +52,21 @@ export async function GET(req: NextRequest) {
         abi: STAKING_ABI,
         functionName: "spinCredits",
         args: [wallet as `0x${string}`],
+        authorizationList: undefined,
       }),
       client.readContract({
         address: config.nft,
         abi: NFT_ABI,
         functionName: "successfulReferrals",
         args: [wallet as `0x${string}`],
+        authorizationList: undefined,
       }),
       client.readContract({
         address: config.nft,
         abi: NFT_ABI,
         functionName: "referralNFTCredits",
         args: [wallet as `0x${string}`],
+        authorizationList: undefined,
       }),
     ]);
 

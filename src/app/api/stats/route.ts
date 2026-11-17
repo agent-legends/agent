@@ -30,11 +30,13 @@ export async function GET() {
         address: config.nft,
         abi: NFT_ABI,
         functionName: "totalMinted",
+        authorizationList: undefined,
       }),
       client.readContract({
         address: config.nft,
         abi: NFT_ABI,
         functionName: "MAX_SUPPLY",
+        authorizationList: undefined,
       }),
     ]);
 
