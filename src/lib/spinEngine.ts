@@ -1,13 +1,14 @@
 import crypto from "crypto";
 
 export type SpinOutcome =
+  | "USD_0_05"
   | "USD_0_10"
-  | "USD_0_20"
+  | "TRY_NEXT_TIME"
+  | "USD_0_40"
   | "USD_0_50"
+  | "USD_0_60"
   | "USD_0_70"
-  | "USD_1_00"
-  | "FREE_SPIN"
-  | "TRY_YOUR_LUCK";
+  | "USD_1_00";
 
 export interface SpinRewardConfig {
   outcome: SpinOutcome;
@@ -29,71 +30,57 @@ export interface SpinRewardConfig {
  * - One free spin: 2% (9300 .. 9499)
  * - Try your luck: 5% (9500 .. 9999)
  */
-export const SPIN_REWARDS: SpinRewardConfig[] = [
-  {
-    outcome: "USD_0_10",
-    label: "$0.10 USDT",
-    usdtAmount: 0.10,
-    isFreeSpin: false,
-    minRoll: 0,
-    maxRoll: 7999,
-    bps: 8000,
-  },
-  {
-    outcome: "USD_0_20",
-    label: "$0.20 USDT",
-    usdtAmount: 0.20,
-    isFreeSpin: false,
-    minRoll: 8000,
-    maxRoll: 8999,
-    bps: 1000,
-  },
-  {
-    outcome: "USD_0_50",
-    label: "$0.50 USDT",
-    usdtAmount: 0.50,
-    isFreeSpin: false,
-    minRoll: 9000,
-    maxRoll: 9099,
-    bps: 100,
-  },
-  {
-    outcome: "USD_0_70",
-    label: "$0.70 USDT",
-    usdtAmount: 0.70,
-    isFreeSpin: false,
-    minRoll: 9100,
-    maxRoll: 9199,
-    bps: 100,
-  },
-  {
-    outcome: "USD_1_00",
-    label: "$1.00 USDT",
-    usdtAmount: 1.00,
-    isFreeSpin: false,
-    minRoll: 9200,
-    maxRoll: 9299,
-    bps: 100,
-  },
-  {
-    outcome: "FREE_SPIN",
-    label: "1 Free Spin",
-    usdtAmount: 0.00,
-    isFreeSpin: true,
-    minRoll: 9300,
-    maxRoll: 9499,
-    bps: 200,
-  },
-  {
-    outcome: "TRY_YOUR_LUCK",
-    label: "Try Your Luck",
-    usdtAmount: 0.00,
-    isFreeSpin: false,
-    minRoll: 9500,
-    maxRoll: 9999,
-    bps: 500,
-  },
+export const DEFAULT_REWARD_CONFIG: Array<{
+  outcome: SpinOutcome;
+  label: string;
+  rewardAmountUsdt: number;
+  preMilestoneBps: number;
+  postMilestoneBps: number;
+}> = [
+  { outcome: "TRY_NEXT_TIME", label: "Try Next Time", rewardAmountUsdt: 0, preMilestoneBps: 2800, postMilestoneBps: 2000 },
+  { outcome: "USD_0_05", label: "$0.05 USDT", rewardAmountUsdt: 0.05, preMilestoneBps: 4000, postMilestoneBps: 4000 },
+  { outcome: "USD_0_10", label: "$0.10 USDT", rewardAmountUsdt: 0.10, preMilestoneBps: 3000, postMilestoneBps: 3000 },
+  { outcome: "USD_0_40", label: "$0.40 USDT", rewardAmountUsdt: 0.40, preMilestoneBps: 200, postMilestoneBps: 200 },
+  { outcome: "USD_0_50", label: "$0.50 USDT", rewardAmountUsdt: 0.50, preMilestoneBps: 0, postMilestoneBps: 200 },
+  { outcome: "USD_0_60", label: "$0.60 USDT", rewardAmountUsdt: 0.60, preMilestoneBps: 0, postMilestoneBps: 200 },
+  { outcome: "USD_0_70", label: "$0.70 USDT", rewardAmountUsdt: 0.70, preMilestoneBps: 0, postMilestoneBps: 200 },
+  { outcome: "USD_1_00", label: "$1.00 USDT", rewardAmountUsdt: 1.00, preMilestoneBps: 0, postMilestoneBps: 200 },
 ];
+
+export const SPIN_REWARDS: SpinRewardConfig[] = buildSpinRewards(false);
+
+export function buildSpinRewards(
+  milestoneReached: boolean,
+  configured = DEFAULT_REWARD_CONFIG
+): SpinRewardConfig[] {
+  const active = configured.filter((tier) => milestoneReached ? true : tier.outcome !== "USD_0_50" && tier.outcome !== "USD_0_60" && tier.outcome !== "USD_0_70" && tier.outcome !== "USD_1_00");
+  let nextRoll = 0;
+  return active.map((tier) => {
+    const bps = milestoneReached ? tier.postMilestoneBps : tier.preMilestoneBps;
+    const config: SpinRewardConfig = {
+      outcome: tier.outcome,
+      label: tier.label,
+      usdtAmount: tier.rewardAmountUsdt,
+      isFreeSpin: false,
+      minRoll: nextRoll,
+      maxRoll: nextRoll + bps - 1,
+      bps,
+    };
+    nextRoll += bps;
+    return config;
+  }).filter((tier) => tier.bps > 0);
+}
+
+export function validateRewardDistribution(
+  tiers: Array<{ preMilestoneBps: number; postMilestoneBps: number }>,
+  milestoneReached: boolean
+): boolean {
+  const sum = tiers.reduce(
+    (total, tier) => total + (milestoneReached ? tier.postMilestoneBps : tier.preMilestoneBps),
+    0
+  );
+  return sum === 10_000;
+}
 
 export interface SpinResult {
   spinId: string;
@@ -112,12 +99,17 @@ export interface SpinResult {
  * Generate a cryptographically secure random spin result
  * Uses Node.js crypto.randomInt(0, 10000) - NEVER Math.random()
  */
-export function executeSecureBackendSpin(walletAddress: string): SpinResult {
+export function executeSecureBackendSpin(
+  walletAddress: string,
+  milestoneReached = false,
+  configured = DEFAULT_REWARD_CONFIG
+): SpinResult {
   // Generate random roll between 0 and 9999 inclusive using CSPRNG
   const randomNumber = crypto.randomInt(0, 10000);
 
   // Determine reward config
-  const matched = SPIN_REWARDS.find(
+  const rewards = buildSpinRewards(milestoneReached, configured);
+  const matched = rewards.find(
     (tier) => randomNumber >= tier.minRoll && randomNumber <= tier.maxRoll
   );
 

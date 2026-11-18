@@ -19,13 +19,14 @@ interface SpinResultData {
 }
 
 const WHEEL_SECTORS = [
+  { id: "TRY_NEXT_TIME", label: "TRY NEXT TIME", color: "#1E293B", textColor: "#94A3B8" },
+  { id: "USD_0_05", label: "$0.05 USDT", color: "#22C55E", textColor: "#07090E" },
   { id: "USD_0_10", label: "$0.10 USDT", color: "#00FF66", textColor: "#07090E" },
-  { id: "USD_0_20", label: "$0.20 USDT", color: "#00E5FF", textColor: "#07090E" },
+  { id: "USD_0_40", label: "$0.40 USDT", color: "#06B6D4", textColor: "#07090E" },
   { id: "USD_0_50", label: "$0.50 USDT", color: "#9D4EDD", textColor: "#FFFFFF" },
+  { id: "USD_0_60", label: "$0.60 USDT", color: "#8B5CF6", textColor: "#FFFFFF" },
   { id: "USD_0_70", label: "$0.70 USDT", color: "#FF007F", textColor: "#FFFFFF" },
   { id: "USD_1_00", label: "$1.00 USDT", color: "#FFB703", textColor: "#07090E" },
-  { id: "FREE_SPIN", label: "FREE SPIN", color: "#3B82F6", textColor: "#FFFFFF" },
-  { id: "TRY_YOUR_LUCK", label: "TRY AGAIN", color: "#1E293B", textColor: "#94A3B8" },
 ];
 
 export function SpinWheel() {
@@ -39,6 +40,11 @@ export function SpinWheel() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [recentSpins, setRecentSpins] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [publicConfirmed, setPublicConfirmed] = useState(false);
+  const [additionalInfo, setAdditionalInfo] = useState("");
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -109,6 +115,54 @@ export function SpinWheel() {
       fetchUserData();
     }
   }, [isConnected, address]);
+
+  const submitRewardClaim = async () => {
+    if (!address || !latestResult) return;
+    if (!/^https?:\/\/(www\.)?(x\.com|twitter\.com)\//i.test(twitterUrl)) {
+      setClaimMessage("Enter a valid public X/Twitter post URL.");
+      return;
+    }
+    if (!publicConfirmed) {
+      setClaimMessage("Confirm that the post is public and available for review.");
+      return;
+    }
+    setClaimSubmitting(true);
+    setClaimMessage(null);
+    try {
+      const claimId = `CLM-${crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+      const timestamp = Date.now();
+      const { createRewardClaimMessage } = await import("@/lib/authMessages");
+      const signature = await signMessageAsync({
+        account: address,
+        message: createRewardClaimMessage(address, timestamp, latestResult.spinId, claimId),
+      });
+      const response = await fetch("/api/reward-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          spinId: latestResult.spinId,
+          claimId,
+          timestamp,
+          signature,
+          twitterUrl,
+          publicConfirmed,
+          additionalInfo,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Claim could not be submitted.");
+      setClaimMessage(data.alreadyRecorded ? "This claim was already submitted." : "Claim submitted successfully.");
+      setTwitterUrl("");
+      setPublicConfirmed(false);
+      setAdditionalInfo("");
+      fetchUserData();
+    } catch (error: unknown) {
+      setClaimMessage(error instanceof Error ? error.message : "Claim could not be submitted.");
+    } finally {
+      setClaimSubmitting(false);
+    }
+  };
 
   const handleSpinClick = async () => {
     if (!isConnected || !address) {
@@ -384,8 +438,51 @@ export function SpinWheel() {
 
               {latestResult.requiresPayout && (
                 <p className="text-[11px] text-amber-200 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                  Your ${latestResult.rewardAmountUsdt.toFixed(2)} USDT prize is awaiting processing. Check the Rewards page for status updates.
+                  Your ${latestResult.rewardAmountUsdt.toFixed(2)} USDT prize requires claim submission.
                 </p>
+              )}
+              {latestResult.outcome === "TRY_NEXT_TIME" && (
+                <p className="text-[11px] text-[#00E5FF] bg-[#00E5FF]/10 p-2.5 rounded-lg border border-[#00E5FF]/20">
+                  Submit this form only to enter the random bonus selection pool. Submission does not guarantee a bonus.
+                </p>
+              )}
+
+              {(latestResult.requiresPayout || latestResult.outcome === "TRY_NEXT_TIME") && (
+                <div className="space-y-2 text-left">
+                  <input
+                    type="url"
+                    value={twitterUrl}
+                    onChange={(event) => setTwitterUrl(event.target.value)}
+                    placeholder="https://x.com/user/status/..."
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+                  />
+                  <label className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={publicConfirmed}
+                      onChange={(event) => setPublicConfirmed(event.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span>I confirm this post is public and available for review.</span>
+                  </label>
+                  <textarea
+                    value={additionalInfo}
+                    onChange={(event) => setAdditionalInfo(event.target.value)}
+                    placeholder="Additional information (optional)"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white min-h-16"
+                  />
+                  {claimMessage && (
+                    <p className="text-[11px] text-amber-300">{claimMessage}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={submitRewardClaim}
+                    disabled={claimSubmitting}
+                    className="w-full py-2.5 rounded-xl border border-[#00E5FF]/40 text-[#00E5FF] text-xs font-mono font-bold disabled:opacity-50"
+                  >
+                    {claimSubmitting ? "SUBMITTING..." : "SUBMIT REWARD CLAIM"}
+                  </button>
+                </div>
               )}
 
               <button

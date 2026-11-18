@@ -24,7 +24,7 @@ export default function AdminPage() {
   const { signMessageAsync } = useSignMessage();
   const chainId = useChainId();
 
-  const [activeTab, setActiveTab] = useState<"PAYOUTS" | "NFT_STAKING" | "SPINS" | "AUDIT">("PAYOUTS");
+  const [activeTab, setActiveTab] = useState<"PAYOUTS" | "NFT_STAKING" | "SPINS" | "AUDIT" | "REWARDS">("PAYOUTS");
   const [payouts, setPayouts] = useState<PayoutItem[]>([]);
   const [spins, setSpins] = useState<any[]>([]);
   const [txHashInput, setTxHashInput] = useState<{ [spinId: string]: string }>({});
@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<any>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
+  const [rewardData, setRewardData] = useState<any>(null);
 
   const isAdmin = isPublicAdminWallet(address);
   const chainConfig = getContractConfig(chainId) ?? CONTRACT_ADDRESSES[56];
@@ -121,11 +122,27 @@ export default function AdminPage() {
       });
   };
 
+  const fetchRewardData = () => {
+    fetch("/api/admin/rewards")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Reward management data could not be loaded.");
+        setRewardData(data);
+      })
+      .catch((error: unknown) => {
+        setActionMessage({
+          text: error instanceof Error ? error.message : "Reward management data could not be loaded.",
+          isError: true,
+        });
+      });
+  };
+
   useEffect(() => {
     if (isAdmin && authenticated) {
       fetchPayouts();
       fetchSpins();
       fetchStats();
+      fetchRewardData();
     }
   }, [isAdmin, authenticated, address]);
 
@@ -384,6 +401,7 @@ export default function AdminPage() {
       <div className="flex space-x-2 border-b border-slate-800 pb-2 overflow-x-auto text-xs font-mono">
         {[
           { key: "PAYOUTS", label: `USDT Payout Queue (${payouts.filter((p) => p.status === "PENDING").length})` },
+          { key: "REWARDS", label: "Reward & Bonus Management" },
           { key: "NFT_STAKING", label: "NFT & Staking Controls" },
           { key: "SPINS", label: "All Spin Results" },
           { key: "AUDIT", label: "Audit Ledger & Export" },
@@ -401,6 +419,105 @@ export default function AdminPage() {
           </button>
         ))}
       </div>
+
+      {activeTab === "REWARDS" && (
+        <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+          <div>
+            <h3 className="text-base font-bold font-mono text-white uppercase">Reward & Bonus Management</h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Server-side configuration, on-chain milestone status, bonus selection, and submitted claims.
+            </p>
+          </div>
+          {rewardData ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] text-slate-500 font-mono">ON-CHAIN MINTS</span>
+                  <div className="text-xl text-white font-mono font-bold">{rewardData.milestone?.mintedCount ?? 0}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] text-slate-500 font-mono">MILESTONE</span>
+                  <div className="text-sm text-[#00FF66] font-mono font-bold">
+                    {rewardData.milestone?.milestoneReached ? "UNLOCKED" : `${rewardData.milestone?.remainingToMilestone ?? 1000} TO UNLOCK`}
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] text-slate-500 font-mono">BONUS POOL REMAINING</span>
+                  <div className="text-xl text-amber-300 font-mono font-bold">${Number(rewardData.pool?.remainingUsdt ?? 0).toFixed(2)}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={async () => {
+                    const res = await fetch("/api/admin/rewards", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "START_BONUS_SELECTION" }),
+                    });
+                    const data = await res.json();
+                    setActionMessage({ text: res.ok ? `Selection complete: ${data.result.selectedCount} selected.` : (data.error || "Selection failed."), isError: !res.ok });
+                    fetchRewardData();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#9D4EDD]/20 border border-[#9D4EDD]/40 text-[#C77DFF] text-xs font-mono font-bold"
+                >
+                  START RANDOM BONUS SELECTION
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      <th className="pb-3">Claim ID</th>
+                      <th className="pb-3">Wallet</th>
+                      <th className="pb-3">Twitter / X</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3">Reward</th>
+                      <th className="pb-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {(rewardData.claims || []).map((claim: any) => (
+                      <tr key={claim.claimId}>
+                        <td className="py-3 text-slate-300">{claim.claimId}</td>
+                        <td className="py-3 text-white">{claim.walletAddress}</td>
+                        <td className="py-3">
+                          <a href={claim.twitterUrl} target="_blank" rel="noreferrer" className="text-[#00E5FF] hover:underline">Review post</a>
+                        </td>
+                        <td className="py-3 text-amber-300">{claim.status.replaceAll("_", " ")}</td>
+                        <td className="py-3 text-emerald-400">{claim.rewardAmountUsdt == null ? "-" : `$${Number(claim.rewardAmountUsdt).toFixed(2)}`}</td>
+                        <td className="py-3">
+                          {["SUBMITTED", "UNDER_REVIEW", "BONUS_SELECTED"].includes(claim.status) && (
+                            <button
+                              onClick={async () => {
+                                const note = prompt("Internal approval note (optional):") || "";
+                                const res = await fetch("/api/admin/rewards", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "APPROVE_CLAIM", claimId: claim.claimId, adminNote: note }),
+                                });
+                                const data = await res.json();
+                                setActionMessage({ text: res.ok ? "Claim approved." : (data.error || "Approval failed."), isError: !res.ok });
+                                fetchRewardData();
+                              }}
+                              className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300"
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500 font-mono">Loading reward management records...</p>
+          )}
+        </div>
+      )}
 
       {/* Tab 1: USDT Payout Queue */}
       {activeTab === "PAYOUTS" && (

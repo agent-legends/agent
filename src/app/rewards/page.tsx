@@ -12,16 +12,37 @@ export default function RewardsPage() {
   const chainId = useChainId();
   const [userData, setUserData] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
+  const [claims, setClaims] = useState<any[]>([]);
+  const [publicStats, setPublicStats] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    fetch("/api/payouts/public")
+      .then(async (res) => {
+        const data = await res.json();
+        if (res.ok) setPublicStats(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (address) {
-      fetch(`/api/user?wallet=${address}`)
-        .then(async (res) => {
+      Promise.all([
+        fetch(`/api/user?wallet=${address}`).then(async (res) => {
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Reward data is unavailable.");
+          return data;
+        }),
+        fetch(`/api/reward-claims?wallet=${address}`).then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Reward claims are unavailable.");
+          return data.claims || [];
+        }),
+      ])
+        .then(([data, rewardClaims]) => {
           setUserData(data);
           setPayouts(data.recentPayouts || []);
+          setClaims(rewardClaims);
         })
         .catch((error: unknown) => {
           setErrorMessage(error instanceof Error ? error.message : "Reward data is unavailable.");
@@ -94,7 +115,79 @@ export default function RewardsPage() {
             BNB Smart Chain USDT token contract: {chainConfig.usdt}. Payout status changes to Paid after the transfer is confirmed on-chain.
           </p>
         </div>
+
+        <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+          <h3 className="text-lg font-bold text-white font-mono uppercase tracking-wider">Reward Claims</h3>
+          {claims.length === 0 ? (
+            <p className="text-xs text-slate-500 font-mono">No reward claims submitted.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400">
+                    <th className="pb-3">Claim ID</th>
+                    <th className="pb-3">Spin</th>
+                    <th className="pb-3">Reward</th>
+                    <th className="pb-3">Status</th>
+                    <th className="pb-3 text-right">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {claims.map((claim) => (
+                    <tr key={claim.claimId}>
+                      <td className="py-3 text-slate-300">{claim.claimId}</td>
+                      <td className="py-3 text-slate-400">{claim.spinId}</td>
+                      <td className="py-3 text-white">
+                        {claim.rewardAmountUsdt != null ? `$${Number(claim.rewardAmountUsdt).toFixed(2)} USDT` : "Pending selection"}
+                      </td>
+                      <td className="py-3 text-amber-300">
+                        {claim.status.replaceAll("_", " ")}
+                      </td>
+                      <td className="py-3 text-right text-slate-500">
+                        {new Date(claim.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
+
+      {publicStats && (
+        <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+          <h3 className="text-lg font-bold text-white font-mono uppercase">Public Verified Payout History</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-slate-500">TOTAL PAID</span>
+              <div className="text-emerald-300 font-bold">${Number(publicStats.totalPaidUsdt).toFixed(2)} USDT</div>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-slate-500">VERIFIED PAYOUTS</span>
+              <div className="text-white font-bold">{publicStats.payoutCount}</div>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-slate-500">APPROVED PENDING</span>
+              <div className="text-amber-300 font-bold">${Number(publicStats.totalPendingApprovedUsdt).toFixed(2)} USDT</div>
+            </div>
+          </div>
+          {(publicStats.payouts || []).length > 0 && (
+            <div className="space-y-2">
+              {publicStats.payouts.slice(0, 10).map((payout: any, index: number) => (
+                <div key={`${payout.txHash}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs font-mono">
+                  <span className="text-white">${Number(payout.rewardAmountUsdt).toFixed(2)} USDT</span>
+                  <span className="text-slate-400">{payout.walletAddress.slice(0, 6)}...{payout.walletAddress.slice(-4)}</span>
+                  <a href={`${chainConfig.explorer}/tx/${payout.txHash}`} target="_blank" rel="noreferrer" className="text-[#00FF66] hover:underline">
+                    BscScan
+                  </a>
+                  <span className="text-slate-500">{payout.verifiedAt ? new Date(payout.verifiedAt).toLocaleDateString() : ""}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payout History Ledger */}
       <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">

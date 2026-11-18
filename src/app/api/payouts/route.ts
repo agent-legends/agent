@@ -25,7 +25,8 @@ export async function GET(req: NextRequest) {
 
   const where: Prisma.PayoutWhereInput = {};
   if (wallet) where.walletAddress = wallet;
-  if (status && status !== "ALL") where.status = status;
+  if (wallet) where.status = "PAID";
+  if (!wallet && status && status !== "ALL") where.status = status;
 
   try {
     const payouts = await prisma.payout.findMany({
@@ -170,6 +171,12 @@ export async function POST(req: NextRequest) {
             if (changed.count !== 1) throw new Error("Payout was finalized by another request.");
 
             await tx.spin.update({ where: { spinId }, data: { payoutStatus: "PAID" } });
+            if (payout.claimId) {
+              await tx.rewardClaim.update({
+                where: { id: payout.claimId },
+                data: { status: "PAID" },
+              });
+            }
             await tx.user.update({
               where: { walletAddress: payout.walletAddress },
               data: {

@@ -4,6 +4,7 @@ import { isAddress, verifyMessage } from "viem";
 import { createSpinMessage } from "@/lib/authMessages";
 import { prisma } from "@/lib/db";
 import { executeSecureBackendSpin, SPIN_REWARDS } from "@/lib/spinEngine";
+import { getRewardTiers, getVerifiedRewardMilestone } from "@/lib/rewardEngine";
 
 const MAX_SIGNATURE_AGE_MS = 5 * 60 * 1000;
 const REQUEST_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,12 +18,22 @@ function publicSpin(spin: {
   isWinner: boolean;
   createdAt: Date;
 }) {
+  const labels: Record<string, string> = {
+    USD_0_05: "$0.05 USDT",
+    USD_0_10: "$0.10 USDT",
+    USD_0_40: "$0.40 USDT",
+    USD_0_50: "$0.50 USDT",
+    USD_0_60: "$0.60 USDT",
+    USD_0_70: "$0.70 USDT",
+    USD_1_00: "$1.00 USDT",
+    TRY_NEXT_TIME: "Try Next Time",
+  };
   const reward = SPIN_REWARDS.find((entry) => entry.outcome === spin.outcome);
   return {
     spinId: spin.spinId,
     walletAddress: spin.walletAddress,
     outcome: spin.outcome,
-    label: reward?.label ?? spin.outcome,
+    label: reward?.label ?? labels[spin.outcome] ?? spin.outcome,
     rewardAmountUsdt: spin.rewardAmountUsdt,
     isFreeSpinAwarded: spin.isFreeSpinAwarded,
     isWinner: spin.isWinner,
@@ -106,7 +117,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = executeSecureBackendSpin(normalizedWallet);
+    const [milestone, tiers] = await Promise.all([
+      getVerifiedRewardMilestone(),
+      getRewardTiers(),
+    ]);
+    const configuredTiers = tiers
+      .filter((tier) => tier.enabled)
+      .map((tier) => ({
+        outcome: tier.outcome as Parameters<typeof executeSecureBackendSpin>[2][number]["outcome"],
+        label: tier.label,
+        rewardAmountUsdt: tier.rewardAmountUsdt,
+        preMilestoneBps: tier.preMilestoneBps,
+        postMilestoneBps: tier.postMilestoneBps,
+      }));
+    const result = executeSecureBackendSpin(
+      normalizedWallet,
+      milestone.milestoneReached,
+      configuredTiers
+    );
+    let nftTokenId: string | null = null;
+    const latestStake = await prisma.transaction.findFirst({
+      where: { walletAddress: normalizedWallet, type: "STAKE" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (latestStake?.metadata) {
+      try {
+        const metadata = JSON.parse(latestStake.metadata) as { tokenIds?: unknown };
+        if (Array.isArray(metadata.tokenIds) && typeof metadata.tokenIds[0] === "string") {
+          nftTokenId = metadata.tokenIds[0];
+        }
+      } catch {}
+    }
     const spin = await prisma.$transaction(
       async (tx) => {
         const debit = await tx.user.updateMany({
@@ -115,9 +156,6 @@ export async function POST(req: NextRequest) {
             availableSpins: { decrement: 1 },
             totalSpins: { increment: 1 },
             totalRewardsWonUsdt: { increment: result.rewardAmountUsdt },
-            pendingPayoutUsdt: {
-              increment: result.requiresPayout ? result.rewardAmountUsdt : 0,
-            },
           },
         });
         if (debit.count !== 1) throw new NoSpinCreditsError();
@@ -132,7 +170,8 @@ export async function POST(req: NextRequest) {
             isFreeSpinAwarded: result.isFreeSpinAwarded,
             randomNumber: result.randomNumber,
             isWinner: result.isWinner,
-            payoutStatus: result.requiresPayout ? "PENDING" : "NONE",
+            nftTokenId,
+            payoutStatus: result.requiresPayout ? "WON_AWAITING_SUBMISSION" : "NONE",
           },
         });
 
@@ -140,16 +179,6 @@ export async function POST(req: NextRequest) {
           await tx.user.update({
             where: { walletAddress: normalizedWallet },
             data: { availableSpins: { increment: 1 } },
-          });
-        }
-
-        if (result.requiresPayout) {
-          await tx.payout.create({
-            data: {
-              spinId: createdSpin.spinId,
-              walletAddress: normalizedWallet,
-              rewardAmountUsdt: result.rewardAmountUsdt,
-            },
           });
         }
 
