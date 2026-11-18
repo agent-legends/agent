@@ -3,7 +3,7 @@
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
 import { PageIntro } from "@/components/PageIntro";
-import { FileText, Shield, Lock, Disc3, Users, Award, Code2 } from "lucide-react";
+import { FileText, Shield, Lock, Disc3, Users, Award, Code2, Bot } from "lucide-react";
 
 export default function DocsPage() {
   return (
@@ -25,12 +25,12 @@ export default function DocsPage() {
             <span>1. Platform Overview</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-              Agent Legends is a BNB Smart Chain collection with NFT minting, staking, spin credits, community referrals, and reward tracking.
+            Agent Legends is a BNB Smart Chain collection with NFT minting, staking, spin credits, community referrals, and reward tracking.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
-              <li><strong className="text-white">Network:</strong> BNB Smart Chain.</li>
-              <li><strong className="text-white">Staking:</strong> A 72-hour minimum lock applies to staked NFTs.</li>
-              <li><strong className="text-white">Rewards:</strong> Spin results and payout updates are available in your account.</li>
+            <li><strong className="text-white">Network:</strong> BNB Smart Chain.</li>
+            <li><strong className="text-white">Staking:</strong> A 72-hour minimum lock applies to staked NFTs.</li>
+            <li><strong className="text-white">Rewards:</strong> Spin results and payout updates are available in your account.</li>
           </ul>
         </section>
 
@@ -38,16 +38,16 @@ export default function DocsPage() {
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Shield className="w-5 h-5 text-[#00E5FF]" />
-          <span>2. NFT Minting & Platform Fee</span>
+            <span>2. NFT Minting & Platform Fee</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-          The NFT mint itself is <strong className="text-[#00FF66]">free</strong>. The contract provides an on-chain BNB quote for the platform fee: <strong className="text-[#00FF66]">$0.10 per NFT</strong>. Blockchain gas is charged separately.
+            The NFT mint itself is <strong className="text-[#00FF66]">free</strong>. The contract provides an on-chain BNB quote for the platform fee: <strong className="text-[#00FF66]">$0.10 per NFT</strong>. Blockchain gas is charged separately.
           </p>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
-          <code>feeWei = quotePlatformFee(quantity)</code>
+            <code>feeWei = quotePlatformFee(quantity)</code>
           </div>
           <p className="text-slate-400">
-          The interface reads the current quote and collection supply directly from the deployed contract. It does not treat the platform fee as an NFT purchase price.
+            The interface reads the current quote and collection supply directly from the deployed contract. It does not treat the platform fee as an NFT purchase price.
           </p>
         </section>
 
@@ -147,6 +147,31 @@ export default function DocsPage() {
             <p>• A referral counts only after the referee successfully mints at least one NFT.</p>
             <p>• Free referral NFTs count toward the 10,000 maximum collection supply.</p>
             <p>• Self-referrals are prohibited at the smart contract level.</p>
+          </div>
+        </section>
+
+        {/* 7. Agentic Wallet & AI Agents */}
+        <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-sky-800/60 bg-slate-900/40 space-y-4">
+          <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
+            <Bot className="w-5 h-5 text-sky-400" />
+            <span>7. Agentic Wallet & AI Agent Protocol Prompts</span>
+          </div>
+          <p className="text-slate-300 leading-relaxed">
+            Agent Legends is designed for direct autonomous interaction via AI Agent wallets (e.g. Brian AI, Coinbase AgentKit, GOAT SDK, ElizaOS). You can issue natural language prompts to your agent to execute on-chain functions:
+          </p>
+          <div className="space-y-3 font-mono text-xs">
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Minting Prompt</span>
+              &ldquo;Mint 1 Agent Legend NFT on BNB Chain (56) using contract 0x3d8b78084BF69936AF661DD33C6F95f345E93702 with the quoted platform fee.&rdquo;
+            </div>
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Staking Prompt</span>
+              &ldquo;Approve NFT 0x3d8b78084BF69936AF661DD33C6F95f345E93702 and stake token in vault 0x5dc11Fd0170935Ae1AFD4b892ff9a59B77190792 on BNB Chain for 72 hours.&rdquo;
+            </div>
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Social Protocol</span>
+              &ldquo;Follow official updates at https://x.com/agent_legends on X (Twitter).&rdquo;
+            </div>
           </div>
         </section>
       </div>

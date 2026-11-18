@@ -18,11 +18,13 @@
     "generate:metadata": "ts-node scripts/generate-metadata.ts"
   },
   "dependencies": {
+    "@prisma/adapter-d1": "^5.22.0",
     "@prisma/adapter-pg": "^5.22.0",
     "@prisma/client": "^5.19.1",
     "@rainbow-me/rainbowkit": "^2.1.6",
     "@tanstack/react-query": "^5.56.2",
     "canvas-confetti": "^1.9.3",
+    "cloudflare": "^4.5.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.441.0",

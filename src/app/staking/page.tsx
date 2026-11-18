@@ -4,6 +4,7 @@ import React from "react";
 import { StakingSection } from "@/components/StakingSection";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
+import { AgenticPromptBox } from "@/components/AgenticPromptBox";
 import { Lock, Shield, Sparkles, Clock, AlertTriangle } from "lucide-react";
 
 export default function StakingPage() {
@@ -19,6 +20,15 @@ export default function StakingPage() {
       />
 
       <StakingSection />
+
+      <div className="max-w-4xl mx-auto">
+        <AgenticPromptBox
+          title="Agentic Wallet Staking Prompt"
+          action="Stake NFT"
+          prompt="Approve NFT contract 0x3d8b78084BF69936AF661DD33C6F95f345E93702 and call stake(tokenId) on Staking vault 0x5dc11Fd0170935Ae1AFD4b892ff9a59B77190792 on BNB Smart Chain (Chain ID: 56)."
+          contractAddress="0x5dc11Fd0170935Ae1AFD4b892ff9a59B77190792"
+        />
+      </div>
 
       {/* Security & Lock Parameters */}
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">

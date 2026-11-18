@@ -4,6 +4,7 @@ import React from "react";
 import { SpinWheel } from "@/components/SpinWheel";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
+import { AgenticPromptBox } from "@/components/AgenticPromptBox";
 import { Disc3, Award } from "lucide-react";
 
 export default function SpinPage() {
@@ -19,6 +20,16 @@ export default function SpinPage() {
       />
 
       <SpinWheel />
+
+      <div className="max-w-4xl mx-auto">
+        <AgenticPromptBox
+          title="Agentic Wallet Spin Prompt"
+          action="Spin & Earn"
+          prompt="Check available spin balance on Agent Legends (https://agent.agentlegends.workers.dev) for connected wallet and execute spin to receive cryptographic reward or USDT prize."
+          contractAddress="Agent Legends Protocol API"
+          network="BNB Smart Chain (56) + D1"
+        />
+      </div>
 
       {/* Reward status overview */}
       <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">

@@ -3,15 +3,28 @@
   "name": "agent",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-04",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "services": [
+  "d1_databases": [
     {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "agent"
+      "binding": "DB",
+      "database_name": "agent-legends-db",
+      "database_id": "443c70cc-5fef-4ea1-98b3-bdca250231b3"
     }
-  ]
+  ],
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "WORKER_SELF_REFERENCE",
+        "type": "service",
+        "service": "agent",
+        "environment": "production"
+      }
+    ]
+  }
 }

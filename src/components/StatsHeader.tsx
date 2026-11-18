@@ -31,12 +31,23 @@ export function StatsHeader() {
     let active = true;
     fetch("/api/stats")
       .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "On-chain statistics are unavailable.");
-        return data as StatsData;
+        if (!response.ok) {
+          let errorMsg = "On-chain statistics are temporarily unavailable.";
+          try {
+            const data = await response.json();
+            errorMsg = data.error || errorMsg;
+          } catch {
+            // Server returned non-JSON (e.g. 500 HTML)
+          }
+          throw new Error(errorMsg);
+        }
+        return response.json() as Promise<StatsData>;
       })
       .then((data) => {
-        if (active) setStats(data);
+        if (active) {
+          setStats(data);
+          setStatsError(null);
+        }
       })
       .catch((error: unknown) => {
         if (active) setStatsError(error instanceof Error ? error.message : "Statistics are unavailable.");

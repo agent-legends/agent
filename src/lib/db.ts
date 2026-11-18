@@ -1,39 +1,49 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { PrismaD1 } from "@prisma/adapter-d1";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 declare global {
   // eslint-disable-next-line no-var
   var prismaGlobal: PrismaClient | undefined;
-  // eslint-disable-next-line no-var
-  var prismaPoolGlobal: Pool | undefined;
 }
 
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  const log: Prisma.LogLevel[] =
-    process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"];
+const log: Prisma.LogLevel[] =
+  process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"];
 
-  if (!connectionString) {
-    return new PrismaClient({ log });
+let cachedD1Client: PrismaClient | undefined;
+
+export function getDb(): PrismaClient {
+  if (cachedD1Client) {
+    return cachedD1Client;
   }
 
-  const pool =
-    process.env.NODE_ENV === "production"
-      ? new Pool({ connectionString, max: 1 })
-      : (globalThis.prismaPoolGlobal ??= new Pool({ connectionString }));
+  try {
+    const cf = getCloudflareContext();
+    if (cf?.env && (cf.env as any).DB) {
+      const adapter = new PrismaD1((cf.env as any).DB);
+      cachedD1Client = new PrismaClient({ adapter, log });
+      return cachedD1Client;
+    }
+  } catch {
+    // Outside of request context or during build
+  }
 
-  return new PrismaClient({
-    adapter: new PrismaPg(pool, { schema: "public" }),
-    log,
-  });
+  if (!globalThis.prismaGlobal) {
+    globalThis.prismaGlobal = new PrismaClient({ log });
+  }
+  return globalThis.prismaGlobal;
 }
 
-export const prisma = globalThis.prismaGlobal ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prismaGlobal = prisma;
-}
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getDb();
+    const value = Reflect.get(client, prop, client);
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
 
 export async function getOrCreateUser(walletAddress: string, referrer?: string) {
   const normalized = walletAddress.toLowerCase();

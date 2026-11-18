@@ -9,7 +9,7 @@ The mainnet contract addresses are configured in `src/config/contracts.ts` and h
 | Contract | BNB Smart Chain address |
 |---|---|
 | Agent Legends NFT | `0x3d8b78084BF69936AF661DD33C6F95f345E93702` |
-| Staking | `0x7eaE685c150D655fA1bA419cCB6956816641a9f4` |
+| Staking | `0x5dc11Fd0170935Ae1AFD4b892ff9a59B77190792` |
 | Agent ID registry | `0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F` |
 
 The project keeps the NFT, staking, and registry ABI subsets in `src/config/abis/`. Important integration details:

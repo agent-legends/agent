@@ -150,8 +150,15 @@ export function SpinWheel() {
           additionalInfo,
         }),
       });
+      if (!response.ok) {
+        let errMessage = "Claim could not be submitted.";
+        try {
+          const errData = await response.json();
+          errMessage = errData.error || errMessage;
+        } catch {}
+        throw new Error(errMessage);
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Claim could not be submitted.");
       setClaimMessage(data.alreadyRecorded ? "This claim was already submitted." : "Claim submitted successfully.");
       setTwitterUrl("");
       setPublicConfirmed(false);
@@ -192,10 +199,16 @@ export function SpinWheel() {
         body: JSON.stringify({ walletAddress: address, requestId, timestamp, signature }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to initiate spin");
+        let errMessage = "Failed to initiate spin";
+        try {
+          const errData = await res.json();
+          errMessage = errData.error || errMessage;
+        } catch {}
+        throw new Error(errMessage);
       }
+
+      const data = await res.json();
 
       const result: SpinResultData = data.spin;
       setAvailableSpins(data.remainingSpins);

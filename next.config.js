@@ -3,6 +3,7 @@ const webpack = require("webpack");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   images: {
     domains: ["ipfs.io", "gateway.pinata.cloud", "cloudflare-ipfs.com"],
   },

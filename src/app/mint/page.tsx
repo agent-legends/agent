@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { MintSection } from "@/components/MintSection";
 import { PageIntro } from "@/components/PageIntro";
 import { StatsHeader } from "@/components/StatsHeader";
+import { AgenticPromptBox } from "@/components/AgenticPromptBox";
 import { Sparkles, CheckCircle2 } from "lucide-react";
 
 export default function MintPage() {
@@ -21,6 +22,15 @@ export default function MintPage() {
       <Suspense fallback={<div className="text-center font-mono text-xs text-slate-400 py-10">Loading recruitment interface...</div>}>
         <MintSection />
       </Suspense>
+
+      <div className="max-w-4xl mx-auto">
+        <AgenticPromptBox
+          title="Agentic Wallet Mint Prompt"
+          action="Free Mint"
+          prompt="Mint 1 Agent Legend NFT on BNB Smart Chain (Chain ID: 56) by calling contract 0x3d8b78084BF69936AF661DD33C6F95f345E93702 function mint(1) with the quoted platform fee."
+          contractAddress="0x3d8b78084BF69936AF661DD33C6F95f345E93702"
+        />
+      </div>
 
       {/* Minting Perks & Contract Security */}
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">

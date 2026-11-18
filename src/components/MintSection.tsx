@@ -175,8 +175,15 @@ export function MintSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ walletAddress: address, txHash: hash }),
       });
+      if (!response.ok) {
+        let errMessage = "Mint data could not be synchronized.";
+        try {
+          const errData = await response.json();
+          errMessage = errData.error || errMessage;
+        } catch {}
+        throw new Error(errMessage);
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Mint data could not be synchronized.");
     } catch (error: unknown) {
       setSyncError(error instanceof Error ? error.message : "Mint data could not be synchronized.");
     }

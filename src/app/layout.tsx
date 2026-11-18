@@ -8,6 +8,22 @@ export const metadata: Metadata = {
   title: "Agent Legends | Free NFT Mint on BNB Chain",
   description:
     "Mint a free Agent Legends NFT on BNB Smart Chain. A separate $0.10 platform fee per NFT and network gas apply.",
+  icons: {
+    icon: "/agent-legends-logo.jpg",
+    shortcut: "/agent-legends-logo.jpg",
+    apple: "/agent-legends-logo.jpg",
+  },
+  openGraph: {
+    title: "Agent Legends | Free NFT Mint on BNB Chain",
+    description: "The next generation of Web3 starts here. Mint, Stake, and Earn on BNB Chain.",
+    images: ["/agent-legends-logo.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@agent_legends",
+    creator: "@agent_legends",
+    images: ["/agent-legends-logo.jpg"],
+  },
   keywords: [
     "Agent Legends",
     "BNB Chain",

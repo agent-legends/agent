@@ -74,6 +74,18 @@ export default function HomePage() {
             <Link href="/explore" className="home-button home-button-secondary">
               Explore collection
             </Link>
+            <a
+              href="https://x.com/agent_legends"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="home-button home-button-secondary flex items-center gap-2"
+              title="Official X / Twitter"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>X @agent_legends</span>
+            </a>
           </div>
 
           <ul className="home-hero-points">
@@ -87,7 +99,13 @@ export default function HomePage() {
           <div className="home-artwork" aria-hidden="true">
             <span className="home-artwork-orbit home-artwork-orbit-one" />
             <span className="home-artwork-orbit home-artwork-orbit-two" />
-            <span className="home-artwork-core"><Shield /></span>
+            <span className="home-artwork-core overflow-hidden flex items-center justify-center p-1 bg-slate-900 border-2 border-sky-400">
+              <img
+                src="/agent-legends-logo.jpg"
+                alt="Agent Legends"
+                className="w-full h-full object-cover rounded-full"
+              />
+            </span>
             <span className="home-artwork-caption">AGENT LEGENDS · BNB 56</span>
           </div>
           <span>Agent Legends protocol</span>
