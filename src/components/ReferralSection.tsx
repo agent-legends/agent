@@ -7,10 +7,11 @@ import {
   useWaitForTransactionReceipt,
   useChainId,
 } from "wagmi";
+import { bsc, bscTestnet } from "wagmi/chains";
 import { Users, Copy, Check, Gift, Crown, Trophy, Sparkles, ExternalLink, AlertCircle } from "lucide-react";
 import { getContractConfig } from "@/config/contracts";
 import { NFT_ABI } from "@/config/abis/nft";
-import { isAddress } from "viem";
+import { getAddress, isAddress } from "viem";
 
 interface ReferralUserStats {
   walletAddress: string;
@@ -42,6 +43,7 @@ export function ReferralSection() {
   const [syncedHash, setSyncedHash] = useState<string | null>(null);
 
   const activeContractConfig = getContractConfig(chainId);
+  const chain = chainId === 97 ? bscTestnet : bsc;
 
   const { data: hash, isPending: isClaimPending, writeContractAsync } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -108,9 +110,11 @@ export function ReferralSection() {
     setClaimError(null);
     try {
       await writeContractAsync({
-        address: activeContractConfig.nft as `0x${string}`,
+        address: getAddress(activeContractConfig.nft),
+        account: address,
         abi: NFT_ABI,
         functionName: "claimReferralNFT",
+        chain,
       });
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);

@@ -166,6 +166,7 @@ export function StakingSection() {
       if (action === "APPROVE") {
         await writeContractAsync({
           address: nftAddress,
+          account: address,
           abi: NFT_ABI,
           functionName: "setApprovalForAll",
           args: [stakingAddress, true],
@@ -174,6 +175,7 @@ export function StakingSection() {
       } else if (action === "STAKE") {
         await writeContractAsync({
           address: stakingAddress,
+          account: address,
           abi: STAKING_ABI,
           functionName: "stake",
           args: [tokenId],
@@ -182,6 +184,7 @@ export function StakingSection() {
       } else {
         await writeContractAsync({
           address: stakingAddress,
+          account: address,
           abi: STAKING_ABI,
           functionName: "unstake",
           args: [tokenId],

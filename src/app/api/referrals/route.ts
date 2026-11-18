@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, isAddress, type Address } from "viem";
+import { createPublicClient, getAddress, http, isAddress } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { getContractConfig } from "@/config/contracts";
 import { NFT_ABI } from "@/config/abis/nft";
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (!config || !isAddress(config.nft)) {
     return NextResponse.json({ error: "NFT contract address is not configured for this chain." }, { status: 503 });
   }
-  const nftAddress = config.nft as Address;
+  const nftAddress = getAddress(config.nft);
 
   const client = createPublicClient({
     chain: chainId === 56 ? bsc : bscTestnet,
@@ -34,14 +34,14 @@ export async function GET(req: NextRequest) {
           address: nftAddress,
           abi: NFT_ABI,
           functionName: "successfulReferrals",
-          args: [wallet as `0x${string}`],
+          args: [getAddress(wallet)],
           authorizationList: undefined,
         }),
         client.readContract({
           address: nftAddress,
           abi: NFT_ABI,
           functionName: "referralNFTCredits",
-          args: [wallet as `0x${string}`],
+          args: [getAddress(wallet)],
           authorizationList: undefined,
         }),
       ]);
@@ -88,21 +88,26 @@ export async function GET(req: NextRequest) {
           referredNftCount: true,
         },
       });
+      const validTrackedUsers = trackedUsers.filter((trackedUser) => isAddress(trackedUser.walletAddress));
+      if (validTrackedUsers.length !== trackedUsers.length) {
+        console.error("Skipping referral leaderboard entries with invalid wallet addresses.");
+      }
       leaderboard = await Promise.all(
-        trackedUsers.map(async (trackedUser) => {
+        validTrackedUsers.map(async (trackedUser) => {
+          const trackedWallet = getAddress(trackedUser.walletAddress);
           const [referrals, credits] = await Promise.all([
             client.readContract({
               address: nftAddress,
               abi: NFT_ABI,
               functionName: "successfulReferrals",
-              args: [trackedUser.walletAddress as `0x${string}`],
+              args: [trackedWallet],
               authorizationList: undefined,
             }),
             client.readContract({
               address: nftAddress,
               abi: NFT_ABI,
               functionName: "referralNFTCredits",
-              args: [trackedUser.walletAddress as `0x${string}`],
+              args: [trackedWallet],
               authorizationList: undefined,
             }),
           ]);
