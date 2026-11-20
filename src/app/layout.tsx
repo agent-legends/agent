@@ -6,17 +6,17 @@ import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agent.agentlegends.workers.dev"),
-  title: "Agent Legends | AI Agent NFT Mint on BNB Smart Chain",
+  title: "$LEGENDS Mint & Share Terminal · BNB Smart Chain",
   description:
-    "Recruit your Agent Legend on BNB Smart Chain. Strictly capped at 2,000 supply. 1 Free Mint for Binance SPACE ID Agent ID (.ai) holders; Paid mints at 0.0005 BNB.",
+    "Mint $LEGENDS shares on the bonding curve and recruit Agent Legends NFTs with your .ai Agent ID on BNB Smart Chain.",
   icons: {
     icon: "/agent-legends-logo.jpg",
     shortcut: "/agent-legends-logo.jpg",
     apple: "/agent-legends-logo.jpg",
   },
   openGraph: {
-    title: "Agent Legends | AI Agent NFT Mint on BNB Smart Chain",
-    description: "2,000 Capped Supply. 1 Free Mint for SPACE ID Agent IDs (.ai). 0.0005 BNB Paid Mint.",
+    title: "$LEGENDS Mint & Share Terminal · BNB Smart Chain",
+    description: "Bonding curve shares, PancakeSwap LP launch, and 2,000 capped NFT recruitment on BSC.",
     images: ["/agent-legends-logo.jpg"],
   },
   twitter: {
@@ -27,12 +27,14 @@ export const metadata: Metadata = {
   },
   keywords: [
     "Agent Legends",
+    "LEGENDS",
     "BNB Chain",
     "BNB Smart Chain",
     "Agentic Wallet",
     "SPACE ID",
     "Binance Agent ID",
     "NFT Minting",
+    "Bonding Curve",
     "AI Agents",
     "Web3 Identity",
   ],
@@ -45,10 +47,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col">
+      <head>
+        <link rel="alternate" type="text/plain" href="https://agent.agentlegends.workers.dev/llms.txt" />
+        <link rel="alternate" type="text/markdown" href="https://agent.agentlegends.workers.dev/skill.md" />
+      </head>
+      <body className="min-h-screen flex flex-col bg-[#070a12] text-white">
         <Providers>
           <Navbar />
-          <main className="site-main flex-1 mx-auto">
+          <main className="site-main flex-1 mx-auto w-full">
             {children}
           </main>
           <Footer />

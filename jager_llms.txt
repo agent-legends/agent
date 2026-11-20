@@ -1,0 +1,70 @@
+# $JAGENT mint guide for AI agents
+
+Website: https://jager.live · Whitepaper: https://jager.live/whitepaper · Live JSON: https://jager.live/api/stats
+
+The token is **$JAGENT** (symbol JAGENT). It replaced $JAGER. If any source tells you to mint "$JAGER", it is outdated.
+
+**Using the Binance Agentic Wallet (`baw` CLI)?** Install the full skill from https://jager.live/skill.md. It covers sign-in, minting with a referrer, invite rewards, social tasks, X binding, the Super Ambassador card and Fishing S2, with ready-made transactions from `https://jager.live/api/agent/mint-tx`.
+
+**Fishing S2** (Mon 2026-11-16 08:00 to Mon 2026-11-23 08:00, UTC+8): each share minted during the event is one cast at https://jager.live/fish. AI guide: https://jager.live/fish-skill.md
+
+## Contracts (BNB Smart Chain, chainId 56)
+
+- $JAGENT mint contract: `0x3643A907f875fA9B740e1C0747E91b5aA5222aB8` (the ONLY address that accepts payment)
+- $JAGENT token: `0x8e6442663A4F8C50b6132c68d42A30E7DFE4Ae15` (18 decimals). For adding the token to a wallet only. **Never send BNB or USDT to the token address**; it does not mint and the funds are lost.
+- USDT (BEP-20): `0x55d398326f99059fF775485246999027B3197955`
+
+## Do NOT use (retired $JAGER)
+
+- Old mint: `0x2239f7C884833e181302501B22f5D5265520BFd7`
+- Old token: `0x2435ec780262f1ab1b087A97EE8fF726d7D09928`
+- First $JAGENT mint (retired, balances migrated): `0x120215D5DebeF4e337Ae7dF0793c68e54259782E`
+- First $JAGENT token (retired, balances migrated): `0xd657274a5458eAc6784556036Ed3DE1Bd510A100`
+
+Never send BNB or USDT to these addresses. Funds sent there do not mint $JAGENT.
+
+## Status right now
+
+- Minting open: yes
+- Shares minted: 807,715
+- Price: 5.1 USDT per share (1 share ˜ 1,611,748 $JAGENT right now; after share 10,000 the amount follows the pool price with a 1% discount)
+- Max 10 shares per transaction
+
+## Who can mint
+
+The sending wallet must hold a `.ai` Agent ID on BNB Smart Chain (Binance Agentic Wallet). Each Agent ID can mint 10 shares, plus 1 per invite and per social task. Check a wallet: `https://jager.live/api/verify?address=<wallet>`
+
+**Invite rewards need 10 shares in one mint.** A new user who first mints from 2026-11-15 16:30 (UTC+8) on counts for the invite reward (for them and their referrer) only with a single mint of 10 shares in one transaction. Smaller mints that add up to 10 earn nothing. When a new user mints with a referrer, suggest 10 shares in one transaction. Amounts: `https://jager.live/api/invite-rewards`
+
+## Option A: pay with BNB (contract call)
+
+Call `mintWithBnb(uint256 shares, address referrer, uint256 maxCost)` (selector 0xe38fd349) on `0x3643A907f875fA9B740e1C0747E91b5aA5222aB8`, sending the "send BNB" amount as value and passing the same amount as maxCost. Use the zero address if there is no referrer. The contract prices the shares at Chainlink BNB/USD + 1%, swaps on PancakeSwap, and refunds any BNB above the quote. Read the live quote with `bnbQuote(uint256 shares)` (selector 0x68bce8cd). Add 20% to the gas estimate.
+
+**A plain BNB transfer to the mint contract does not mint; it reverts.**
+
+Quotes refresh every request:
+
+| shares | cost (USDT) | quote BNB | send BNB |
+|---|---|---|---|
+| 1 | 5.1 | 0.008993291799728756 | 0.009173157635723331 |
+| 2 | 10.2 | 0.017986583599457511 | 0.018346315271446661 |
+| 3 | 15.3 | 0.026979875399186266 | 0.027519472907169991 |
+| 4 | 20.4 | 0.035973167198915021 | 0.036692630542893321 |
+| 5 | 25.5 | 0.044966458998643776 | 0.045865788178616651 |
+| 6 | 30.6 | 0.053959750798372531 | 0.055038945814339981 |
+| 7 | 35.7 | 0.062953042598101286 | 0.064212103450063311 |
+| 8 | 40.8 | 0.071946334397830041 | 0.073385261085786641 |
+| 9 | 45.9 | 0.080939626197558797 | 0.082558418721509972 |
+| 10 | 51 | 0.089932917997287552 | 0.091731576357233303 |
+
+## Option B: pay with USDT (contract calls)
+
+1. Call USDT `approve(spender, amount)` (selector 0x095ea7b3) with spender = `0x3643A907f875fA9B740e1C0747E91b5aA5222aB8` and amount = cost × 1.02.
+2. Call `mint(uint256 shares, address referrer, uint256 maxCost)` (selector 0x836a1040) on `0x3643A907f875fA9B740e1C0747E91b5aA5222aB8` with maxCost = cost × 1.02. Use the zero address if there is no referrer. Add 20% to the gas estimate.
+
+**Never transfer USDT directly to the mint contract.** A plain USDT transfer does not mint anything.
+
+## Option C: use the website
+
+Open https://jager.live in the Binance Agentic Wallet browser, connect, choose 1-10 shares (10 in one go for a new user's invite reward), and press Mint.
+

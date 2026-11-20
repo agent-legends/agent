@@ -68,7 +68,18 @@ export default function HomePage() {
                 className="px-4 py-2.5 rounded-xl bg-sky-950/60 hover:bg-sky-900/60 text-sky-400 border border-sky-500/30 font-mono text-xs font-bold transition-colors flex items-center gap-2"
               >
                 <Bot className="w-4 h-4" />
-                <span>AI Agent Guide (/llms.txt)</span>
+                <span>AI Agent Guide</span>
+                <ExternalLink className="w-3 h-3 opacity-70" />
+              </a>
+
+              <a
+                href="/skill.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-violet-950/60 hover:bg-violet-900/60 text-violet-300 border border-violet-500/30 font-mono text-xs font-bold transition-colors flex items-center gap-2"
+              >
+                <Bot className="w-4 h-4" />
+                <span>baw Skill (/skill.md)</span>
                 <ExternalLink className="w-3 h-3 opacity-70" />
               </a>
 
