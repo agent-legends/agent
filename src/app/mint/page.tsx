@@ -12,7 +12,7 @@ const AGENT_PROMPT = `Interact with the Agent Legends NFT contract on BNB Smart 
 
 export default function MintPage() {
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <div className="space-y-10 w-full">
       {/* Intro Header */}
       <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 bg-slate-950/80 font-mono space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -21,7 +21,7 @@ const AGENT_PROMPT = `Interact with Agent Legends on BNB Smart Chain (Chain ID: 
 
 export default function HomePage() {
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <div className="space-y-10 w-full">
       {/* Hero Banner Header */}
       <section className="glass-panel p-6 sm:p-10 rounded-3xl border border-slate-800 bg-gradient-to-b from-slate-900/60 via-slate-950/80 to-slate-950 shadow-2xl relative overflow-hidden">
         {/* Ambient Glows */}

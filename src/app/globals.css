@@ -90,9 +90,14 @@
 }
 
 main.site-main {
-  width: min(100% - 2rem, 84rem);
-  padding-top: clamp(1.5rem, 4vw, 3rem);
-  padding-bottom: clamp(3rem, 7vw, 6rem);
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  padding-bottom: clamp(3rem, 5vw, 5rem);
 }
 
 .font-mono {

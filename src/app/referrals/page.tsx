@@ -5,7 +5,7 @@ import { Trophy, Gift, Crown, Shield, Users } from "lucide-react";
 
 export default function ReferralsPage() {
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 py-4 sm:py-6 font-mono">
+    <div className="space-y-10 w-full font-mono">
       {/* Referral Header */}
       <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-[#00FF66]/30 bg-slate-950/80 space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
