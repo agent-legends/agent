@@ -77,11 +77,28 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 interface ActivityItem {
   id: string;
-  type: "MINT" | "REFERRAL";
+  type: "SHARES" | "REFERRAL" | "NFT";
   account: string;
   detail: string;
   txHash: string;
+  blockNumber: number;
 }
+
+interface RankRow {
+  wallet: string;
+  value: number;
+  secondary: string;
+}
+
+interface ActivityFeed {
+  activities: ActivityItem[];
+  leaderboard: { nftMinters: RankRow[]; shareBuyers: RankRow[]; referrers: RankRow[] };
+  totals: { nftMints: number; shareMints: number; referrals: number };
+  latestBlock: number;
+  updatedAt: number;
+}
+
+const RANK_TITLES = ["High Commander", "Division Architect", "Field Marshal", "Vanguard Leader", "Tactical Captain"];
 
 // Generate the 10 representative milestones for the Tiered Pricing curve
 const PRICING_TIERS = [
@@ -134,6 +151,8 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
 
   // Recent Activity Feed
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [feed, setFeed] = useState<ActivityFeed | null>(null);
+  const [feedStatus, setFeedStatus] = useState<"loading" | "ok" | "error">("loading");
 
   const isBscMainnet = chainId === 56;
   const config = CONTRACT_ADDRESSES[56];
@@ -594,89 +613,39 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
     (claimNftError ? claimNftError.message : null) ||
     (mintPaidError ? mintPaidError.message : null);
 
-  // Poll BSC logs for activity stream
+  // Live activity feed: served by /api/activity, which scans BSC logs through a
+  // getLogs-capable RPC (bsc-dataseed rejects eth_getLogs).
   useEffect(() => {
     let unmounted = false;
-    const client = createPublicClient({
-      chain: bsc,
-      transport: http("https://bsc-dataseed.binance.org/"),
-    });
 
-    async function loadLogs() {
+    async function loadFeed() {
       try {
-        const currentBlock = await client.getBlockNumber();
-        const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
-
-        const [mintLogs, refLogs] = await Promise.all([
-          client.getLogs({
-            address: config.shareMint,
-            event: {
-              type: "event",
-              name: "SharesMinted",
-              inputs: [
-                { type: "address", name: "buyer", indexed: true },
-                { type: "address", name: "referrer", indexed: true },
-                { type: "uint256", name: "sharesAmount" },
-                { type: "uint256", name: "totalCost" },
-                { type: "uint256", name: "newTotalShares" },
-              ],
-            },
-            fromBlock,
-            toBlock: "latest",
-          }),
-          client.getLogs({
-            address: config.shareMint,
-            event: {
-              type: "event",
-              name: "ReferralPaid",
-              inputs: [
-                { type: "address", name: "referrer", indexed: true },
-                { type: "address", name: "referee", indexed: true },
-                { type: "uint256", name: "commissionAmount" },
-                { type: "uint256", name: "cashbackAmount" },
-              ],
-            },
-            fromBlock,
-            toBlock: "latest",
-          }),
-        ]);
-
+        const res = await fetch("/api/activity", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as ActivityFeed;
         if (unmounted) return;
-
-        const parsedMint: ActivityItem[] = mintLogs.map((log) => ({
-          id: `${log.transactionHash}-${log.logIndex}`,
-          type: "MINT",
-          account: (log.args as any).buyer || "",
-          detail: `Minted ${Number((log.args as any).sharesAmount || 0)} Shares for $${(
-            Number((log.args as any).totalCost || 0) / 1e18
-          ).toFixed(2)} USDT`,
-          txHash: log.transactionHash,
-        }));
-
-        const parsedRef: ActivityItem[] = refLogs.map((log) => ({
-          id: `${log.transactionHash}-${log.logIndex}`,
-          type: "REFERRAL",
-          account: (log.args as any).referrer || "",
-          detail: `Earned $${(Number((log.args as any).commissionAmount || 0) / 1e18).toFixed(
-            2
-          )} USDT (+5% Cashback Paid)`,
-          txHash: log.transactionHash,
-        }));
-
-        const combined = [...parsedMint, ...parsedRef].slice(0, 10);
-        setActivities(combined);
+        setFeed(data);
+        setActivities(data.activities || []);
+        setFeedStatus("ok");
       } catch {
-        // Fallback for RPC rate limit
+        if (!unmounted) setFeedStatus((prev) => (prev === "ok" ? "ok" : "error"));
       }
     }
 
-    loadLogs();
-    const interval = setInterval(loadLogs, 15000);
+    loadFeed();
+    const interval = setInterval(loadFeed, 15000);
     return () => {
       unmounted = true;
       clearInterval(interval);
     };
-  }, [config.shareMint]);
+  }, []);
+
+  const leaderboardRows: RankRow[] = useMemo(() => {
+    if (!feed) return [];
+    if (lbCategory === "MINTS") return feed.leaderboard.shareBuyers;
+    if (lbCategory === "INVITES" || lbCategory === "AMBASSADORS") return feed.leaderboard.referrers;
+    return feed.leaderboard.nftMinters; // HOLDERS
+  }, [feed, lbCategory]);
 
   return (
     <div className="space-y-10 font-mono text-xs">
@@ -1370,7 +1339,7 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
 
               {/* Sub-Filters: Invites | Mints | Holders | Ambassadors */}
               <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
-                {(["INVITES", "MINTS", "HOLDERS", "AMBASSADORS"] as const).map((cat) => (
+                {(["INVITES", "MINTS", "HOLDERS"] as const).map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -1381,7 +1350,7 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    {cat}
+                    {cat === "INVITES" ? "Invites" : cat === "MINTS" ? "Share Mints" : "NFT Holders"}
                   </button>
                 ))}
               </div>
@@ -1399,28 +1368,50 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {[
-                    { rank: 1, wallet: "0x71c8...4f89", metric: "42 Invites · 118 Shares", title: "👑 High Commander" },
-                    { rank: 2, wallet: "0x34a2...99e7", metric: "33 Invites · 89 Shares", title: "Division Architect" },
-                    { rank: 3, wallet: "0x89d2...4f32", metric: "27 Invites · 74 Shares", title: "Field Marshall" },
-                    { rank: 4, wallet: "0x53d8...c3b8", metric: "18 Invites · 52 Shares", title: "Vanguard Leader" },
-                    { rank: 5, wallet: "0x12e4...66aa", metric: "15 Invites · 39 Shares", title: "Tactical Captain" },
-                  ].map((row) => (
-                    <tr key={row.rank} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="py-3.5 font-bold">
-                        {row.rank === 1 ? (
-                          <span className="flex items-center text-amber-300 gap-1">
-                            <Crown className="w-3.5 h-3.5" /> #1
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">#{row.rank}</span>
-                        )}
+                  {leaderboardRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-slate-500">
+                        {feedStatus === "loading"
+                          ? "Scanning BNB Smart Chain events..."
+                          : feedStatus === "error"
+                          ? "Leaderboard data is temporarily unavailable. Retrying..."
+                          : lbCategory === "MINTS"
+                          ? "No share mints yet. Be the first operative on the bonding curve."
+                          : lbCategory === "INVITES"
+                          ? "No referral payouts yet. Share your link to top the board."
+                          : "No NFT mints found in the recent block window."}
                       </td>
-                      <td className="py-3.5 text-white font-bold">{row.wallet}</td>
-                      <td className="py-3.5 text-center text-emerald-400 font-bold">{row.metric}</td>
-                      <td className="py-3.5 text-right text-slate-300">{row.title}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    leaderboardRows.map((row, idx) => (
+                      <tr key={row.wallet} className="hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3.5 font-bold">
+                          {idx === 0 ? (
+                            <span className="flex items-center text-amber-300 gap-1">
+                              <Crown className="w-3.5 h-3.5" /> #1
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">#{idx + 1}</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 text-white font-bold">
+                          <a
+                            href={`https://bscscan.com/address/${row.wallet}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-sky-300"
+                          >
+                            {row.wallet.slice(0, 6)}...{row.wallet.slice(-4)}
+                          </a>
+                          {address && row.wallet === address.toLowerCase() && (
+                            <span className="ml-2 text-[10px] text-amber-300">(you)</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 text-center text-emerald-400 font-bold">{row.secondary}</td>
+                        <td className="py-3.5 text-right text-slate-300">{RANK_TITLES[idx] ?? "Operative"}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1435,14 +1426,20 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2 font-bold text-white uppercase tracking-wider">
             <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-            <span>Live On-Chain Share Terminal Activity (BSC Mainnet)</span>
+            <span>Live On-Chain Activity (BSC Mainnet)</span>
           </div>
-          <span className="text-[10px] text-slate-500">Real-Time Event Stream</span>
+          <span className="text-[10px] text-slate-500">
+            {feed ? `Block #${feed.latestBlock.toLocaleString()} · refreshes every 15s` : "Real-Time Event Stream"}
+          </span>
         </div>
 
         {activities.length === 0 ? (
           <p className="text-xs text-slate-500 py-4 text-center">
-            Waiting for recent share mint events... Mint the first shares to appear here!
+            {feedStatus === "loading"
+              ? "Scanning recent BNB Smart Chain blocks..."
+              : feedStatus === "error"
+              ? "Could not reach the BSC log indexer. Retrying every 15s..."
+              : "No share or NFT mints in the recent block window yet. Mint to appear here!"}
           </p>
         ) : (
           <div className="space-y-2">
@@ -1453,9 +1450,13 @@ export function AgenticTerminal({ defaultTab = "SHARES" }: { defaultTab?: "SHARE
               >
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    act.type === "MINT" ? "bg-violet-500/20 text-violet-300" : "bg-emerald-500/20 text-emerald-300"
+                    act.type === "SHARES"
+                      ? "bg-violet-500/20 text-violet-300"
+                      : act.type === "NFT"
+                      ? "bg-sky-500/20 text-sky-300"
+                      : "bg-emerald-500/20 text-emerald-300"
                   }`}>
-                    {act.type}
+                    {act.type === "NFT" ? "NFT MINT" : act.type === "SHARES" ? "SHARES" : "REFERRAL"}
                   </span>
                   <span className="text-white font-bold">{act.account.slice(0, 6)}...{act.account.slice(-4)}</span>
                   <span className="text-slate-400">{act.detail}</span>
