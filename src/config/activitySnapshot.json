@@ -1,0 +1,453 @@
+{
+  "latestBlock": 134737959,
+  "totals": {
+    "nftMints": 442,
+    "shareMints": 1,
+    "referrals": 0
+  },
+  "activities": [
+    {
+      "id": "0xfdc632f06368653e20c2ca0a907da95b4d91a2123890a4eefaf9fec38e289fca-241",
+      "type": "NFT",
+      "account": "0x38900cCc33baAa80915300161e10cf8107B748De",
+      "detail": "Recruited 1 Agent Legend (#446)",
+      "txHash": "0xfdc632f06368653e20c2ca0a907da95b4d91a2123890a4eefaf9fec38e289fca",
+      "blockNumber": 134734137
+    },
+    {
+      "id": "0xe1dd36fabfaaebde252c7c8b7ee6f5d9c84246b2074821cd2aa267c8b85d0da0-428",
+      "type": "NFT",
+      "account": "0x8E5282CbA82988328f0c3feBFe8F474A754BBa6c",
+      "detail": "Recruited 1 Agent Legend (#445)",
+      "txHash": "0xe1dd36fabfaaebde252c7c8b7ee6f5d9c84246b2074821cd2aa267c8b85d0da0",
+      "blockNumber": 134733322
+    },
+    {
+      "id": "0x8ccd039d08ba26593159d5b5a276f80ab842c1917fc6ea5a2a963b1986e8199b-539",
+      "type": "NFT",
+      "account": "0x7743abe3263f0b607aeFd80FBeaED15d881524A1",
+      "detail": "Recruited 1 Agent Legend (#444)",
+      "txHash": "0x8ccd039d08ba26593159d5b5a276f80ab842c1917fc6ea5a2a963b1986e8199b",
+      "blockNumber": 134731871
+    },
+    {
+      "id": "0x4eeab31e37456af94b98fd0365abdec5873714f5ef4b422e9b1a2a1fa5f02311-250",
+      "type": "NFT",
+      "account": "0xB9629F4154648be654833978ED7b87037428C710",
+      "detail": "Recruited 1 Agent Legend (#443)",
+      "txHash": "0x4eeab31e37456af94b98fd0365abdec5873714f5ef4b422e9b1a2a1fa5f02311",
+      "blockNumber": 134729283
+    },
+    {
+      "id": "0xcf015ea633636d3b9641fa6a51a094c618f2a1a23a3d06d0657a3ec7ccd28801-83",
+      "type": "NFT",
+      "account": "0xDAC4B81F0be13634dD40122aedCfeab87b1b6942",
+      "detail": "Recruited 1 Agent Legend (#442)",
+      "txHash": "0xcf015ea633636d3b9641fa6a51a094c618f2a1a23a3d06d0657a3ec7ccd28801",
+      "blockNumber": 134729024
+    },
+    {
+      "id": "0x475d6aba5875e524a273766e063457388a2c4a82e4aaaa56341a94f4d72a834d-311",
+      "type": "NFT",
+      "account": "0x7f393c7C6fab23CC0B84aA6aD5E5B8A832228eDc",
+      "detail": "Recruited 1 Agent Legend (#441)",
+      "txHash": "0x475d6aba5875e524a273766e063457388a2c4a82e4aaaa56341a94f4d72a834d",
+      "blockNumber": 134728964
+    },
+    {
+      "id": "0x2f946564e34f0aab4086e14e6d1f5c494af62decdecfe161310e9d7cb7aee24f-232",
+      "type": "NFT",
+      "account": "0xE3f1E3A27561FD3aD6c0036Ce0a41ac7932316B7",
+      "detail": "Recruited 1 Agent Legend (#440)",
+      "txHash": "0x2f946564e34f0aab4086e14e6d1f5c494af62decdecfe161310e9d7cb7aee24f",
+      "blockNumber": 134724490
+    },
+    {
+      "id": "0xb67128fd757fc257c9940f5f44772b1f27727a79a283fe312b4201194ada8eaf-172",
+      "type": "NFT",
+      "account": "0x977c76916dB01f935F81699e01A741F16e977975",
+      "detail": "Recruited 1 Agent Legend (#439)",
+      "txHash": "0xb67128fd757fc257c9940f5f44772b1f27727a79a283fe312b4201194ada8eaf",
+      "blockNumber": 134723949
+    },
+    {
+      "id": "0x90704a33f8367b11013cf8b95900d9868d1b6b978085250c3be2e938f33ffce0-305",
+      "type": "NFT",
+      "account": "0x3251DD0a4fef0F05e5289418b66823C39205070E",
+      "detail": "Recruited 1 Agent Legend (#438)",
+      "txHash": "0x90704a33f8367b11013cf8b95900d9868d1b6b978085250c3be2e938f33ffce0",
+      "blockNumber": 134723719
+    },
+    {
+      "id": "0xa7ee0cd8bc32fbe40ab26578997e65241a41eb13e52ef7e2f4a6abd19dbb278a-584",
+      "type": "NFT",
+      "account": "0x13e483a6c8db83c14EB0D85D9AA9087a2ab74308",
+      "detail": "Recruited 1 Agent Legend (#437)",
+      "txHash": "0xa7ee0cd8bc32fbe40ab26578997e65241a41eb13e52ef7e2f4a6abd19dbb278a",
+      "blockNumber": 134719720
+    },
+    {
+      "id": "0x1e794ffa8d27ec62b8b3b64cfb8ea2304298ea8ff9aa983ea7f3cbce2c3d6cbb-241",
+      "type": "NFT",
+      "account": "0x9394404BdB4c536B2b0cBE91E1FFFa0B598912cA",
+      "detail": "Recruited 1 Agent Legend (#436)",
+      "txHash": "0x1e794ffa8d27ec62b8b3b64cfb8ea2304298ea8ff9aa983ea7f3cbce2c3d6cbb",
+      "blockNumber": 134713524
+    },
+    {
+      "id": "0x6aa63a0de1ebe29b10509e18f0328769e4e051bf683c4f7cc8ef9edb12c1b9be-215",
+      "type": "NFT",
+      "account": "0x2eDf93542Ce68D2a06b248238fA97EEc45D00342",
+      "detail": "Recruited 1 Agent Legend (#434)",
+      "txHash": "0x6aa63a0de1ebe29b10509e18f0328769e4e051bf683c4f7cc8ef9edb12c1b9be",
+      "blockNumber": 134712495
+    },
+    {
+      "id": "0x2e93141ae6ab1ece1886d5412f3779cdc621988015a1bbee6dd6d362b77521dc-217",
+      "type": "NFT",
+      "account": "0x81D927F2FD65847563F7879A727456a52E3B8a86",
+      "detail": "Recruited 1 Agent Legend (#435)",
+      "txHash": "0x2e93141ae6ab1ece1886d5412f3779cdc621988015a1bbee6dd6d362b77521dc",
+      "blockNumber": 134712495
+    },
+    {
+      "id": "0x312ef59ec80f5a781b4527cd2acaeaad56efa50724c755b05f0c5f4516b58241-284",
+      "type": "NFT",
+      "account": "0xeA1D940442A1b248F64AD4461f0cd3ce4a0D71D0",
+      "detail": "Recruited 1 Agent Legend (#433)",
+      "txHash": "0x312ef59ec80f5a781b4527cd2acaeaad56efa50724c755b05f0c5f4516b58241",
+      "blockNumber": 134712222
+    },
+    {
+      "id": "0x1df27cbecdf8b65e6bbd393f39318f56bea854fbd3d166c24028567ebfdee2a0-356",
+      "type": "NFT",
+      "account": "0x3f04a4d4042eDfd8D9cc6F2C5b6302a65c8c142A",
+      "detail": "Recruited 1 Agent Legend (#432)",
+      "txHash": "0x1df27cbecdf8b65e6bbd393f39318f56bea854fbd3d166c24028567ebfdee2a0",
+      "blockNumber": 134712166
+    },
+    {
+      "id": "0x7957d7e81e5fd62c1d983b56276994a31df05e1643b40b70118663aefdc36c76-358",
+      "type": "NFT",
+      "account": "0xB8bC4A4274B24826C0dCd846f33C92Ec08e6C990",
+      "detail": "Recruited 1 Agent Legend (#431)",
+      "txHash": "0x7957d7e81e5fd62c1d983b56276994a31df05e1643b40b70118663aefdc36c76",
+      "blockNumber": 134711954
+    },
+    {
+      "id": "0xbf1ff5cb39011a46e5ea6ea77ec7c182944ce97c9ec65e77e602da4e0669a373-548",
+      "type": "NFT",
+      "account": "0x4D5722b240Cc6739C9cfac7A3080Ea7638866243",
+      "detail": "Recruited 1 Agent Legend (#430)",
+      "txHash": "0xbf1ff5cb39011a46e5ea6ea77ec7c182944ce97c9ec65e77e602da4e0669a373",
+      "blockNumber": 134711119
+    },
+    {
+      "id": "0x7eeb0a1660e2ef1b1d0c0e40cefae08e3b68fbe67e963259f4c1c8092797aa22-374",
+      "type": "NFT",
+      "account": "0x2b9300182c689216566091Fef13eE4213A44129d",
+      "detail": "Recruited 1 Agent Legend (#429)",
+      "txHash": "0x7eeb0a1660e2ef1b1d0c0e40cefae08e3b68fbe67e963259f4c1c8092797aa22",
+      "blockNumber": 134710377
+    },
+    {
+      "id": "0xc55be7c0299a167c4bbc5b4fddd01b4393a1057fe0c61e01b7ac41d7fd042f2c-302",
+      "type": "NFT",
+      "account": "0x46A60ed6614D2148f56A269915c75d5224b8aa55",
+      "detail": "Recruited 1 Agent Legend (#422)",
+      "txHash": "0xc55be7c0299a167c4bbc5b4fddd01b4393a1057fe0c61e01b7ac41d7fd042f2c",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x2ef863871b4ac258d8abd4a7a422a6d5058b766fbe7661e8f2ea6aa6e4df439f-304",
+      "type": "NFT",
+      "account": "0xb4039755a93e4208B53C2B14B9bF00a32625aeba",
+      "detail": "Recruited 1 Agent Legend (#423)",
+      "txHash": "0x2ef863871b4ac258d8abd4a7a422a6d5058b766fbe7661e8f2ea6aa6e4df439f",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x2deb849d575beaafa31b7b359d67b5835cd1f2687276c5a8546d641975da7104-306",
+      "type": "NFT",
+      "account": "0xCD70a88408218b7Ff1C561f6b6b50D3248bC3BA5",
+      "detail": "Recruited 1 Agent Legend (#424)",
+      "txHash": "0x2deb849d575beaafa31b7b359d67b5835cd1f2687276c5a8546d641975da7104",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x5ed744afbdba2cfa18a72c3422e79e03b7c075a4d5e3727365ebb6b5c571a34e-308",
+      "type": "NFT",
+      "account": "0xafFa3e276CfEBAf52aF323333392De2145622c3C",
+      "detail": "Recruited 1 Agent Legend (#425)",
+      "txHash": "0x5ed744afbdba2cfa18a72c3422e79e03b7c075a4d5e3727365ebb6b5c571a34e",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x323a4d78e4a78f9129511e1e4a41644f6794571f04402e302b49c0e91f23d441-310",
+      "type": "NFT",
+      "account": "0x19fD690B74E369189B258F32bcEE087F2D156AC5",
+      "detail": "Recruited 1 Agent Legend (#426)",
+      "txHash": "0x323a4d78e4a78f9129511e1e4a41644f6794571f04402e302b49c0e91f23d441",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x4b7da86f385079db2235927e300248ec3af3bbde58b0c1c1f03e9ec308fe2f1c-312",
+      "type": "NFT",
+      "account": "0x4c9299c57918502d5AeC8eB818158d0dbeC7Fd62",
+      "detail": "Recruited 1 Agent Legend (#427)",
+      "txHash": "0x4b7da86f385079db2235927e300248ec3af3bbde58b0c1c1f03e9ec308fe2f1c",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0xbde863fe493668341cf1de28b8e0c95989edbfb2e87e5f1387654897acbf80e9-314",
+      "type": "NFT",
+      "account": "0x3A7b2Ba382caAA6F24284ffA5f8762A5b13412A0",
+      "detail": "Recruited 1 Agent Legend (#428)",
+      "txHash": "0xbde863fe493668341cf1de28b8e0c95989edbfb2e87e5f1387654897acbf80e9",
+      "blockNumber": 134710267
+    },
+    {
+      "id": "0x2c22cda888d4d68b267e3704eb90eef13a62221e4b65a2fabb8fe33e2fe62021-230",
+      "type": "NFT",
+      "account": "0x237566F2070663247036C398E1cf52A9c8D1e71a",
+      "detail": "Recruited 1 Agent Legend (#417)",
+      "txHash": "0x2c22cda888d4d68b267e3704eb90eef13a62221e4b65a2fabb8fe33e2fe62021",
+      "blockNumber": 134710266
+    },
+    {
+      "id": "0x33c757a91eeb26f5e1d2bbd55c4fcbd648c42054e4aa478f1ebf6d74d550ca04-232",
+      "type": "NFT",
+      "account": "0x75d47E96bF0F2804cE9009190B810d64C5Ef4802",
+      "detail": "Recruited 1 Agent Legend (#418)",
+      "txHash": "0x33c757a91eeb26f5e1d2bbd55c4fcbd648c42054e4aa478f1ebf6d74d550ca04",
+      "blockNumber": 134710266
+    },
+    {
+      "id": "0x5909dc01d992174f7a4fc6adf30a3acda9bde589e482458249a82084aac7ea27-234",
+      "type": "NFT",
+      "account": "0xBeed7DAe463a8b2cb729e332CeE6DD1B2b98083e",
+      "detail": "Recruited 1 Agent Legend (#419)",
+      "txHash": "0x5909dc01d992174f7a4fc6adf30a3acda9bde589e482458249a82084aac7ea27",
+      "blockNumber": 134710266
+    },
+    {
+      "id": "0x61463e5c24fe6a9f80ef1c7dfdc88714d0b7776834f98a94f5fe5f4ed56379e9-665",
+      "type": "NFT",
+      "account": "0xd597017BDbB88db1cB563B98CaC2ef08506AA6A1",
+      "detail": "Recruited 1 Agent Legend (#420)",
+      "txHash": "0x61463e5c24fe6a9f80ef1c7dfdc88714d0b7776834f98a94f5fe5f4ed56379e9",
+      "blockNumber": 134710266
+    },
+    {
+      "id": "0xf1df4652c2f26e11f6a4b2117a6531069fcd7b94b9f23b6d1f8f88ac0a1697fa-670",
+      "type": "NFT",
+      "account": "0x86203Dce294d7f74eAf7452080F299c04367f2aa",
+      "detail": "Recruited 1 Agent Legend (#421)",
+      "txHash": "0xf1df4652c2f26e11f6a4b2117a6531069fcd7b94b9f23b6d1f8f88ac0a1697fa",
+      "blockNumber": 134710266
+    },
+    {
+      "id": "0x4c88d2f05a1ba8a9e5a65ba67a35b02cde8ece7ff3325695af22c0adad23a74f-208",
+      "type": "NFT",
+      "account": "0xDDF42a1B73188A563c6Ed0e10A85883Fd20f3be2",
+      "detail": "Recruited 1 Agent Legend (#416)",
+      "txHash": "0x4c88d2f05a1ba8a9e5a65ba67a35b02cde8ece7ff3325695af22c0adad23a74f",
+      "blockNumber": 134709442
+    },
+    {
+      "id": "0x68af6b6863920f041509b73f174f6e24a9b3efabc07562bc03f642634aa02475-144",
+      "type": "NFT",
+      "account": "0xAB58E29c339ecAFc02d250cD54bCbA8401606A20",
+      "detail": "Recruited 1 Agent Legend (#415)",
+      "txHash": "0x68af6b6863920f041509b73f174f6e24a9b3efabc07562bc03f642634aa02475",
+      "blockNumber": 134708937
+    },
+    {
+      "id": "0x2639c631224095421091f7202aeb870d5c64a19c054be0ee2285431fc8f54ae6-142",
+      "type": "NFT",
+      "account": "0x664e909A60f9CAC1e6a7181613d6Bb56AdEb070b",
+      "detail": "Recruited 1 Agent Legend (#414)",
+      "txHash": "0x2639c631224095421091f7202aeb870d5c64a19c054be0ee2285431fc8f54ae6",
+      "blockNumber": 134708544
+    },
+    {
+      "id": "0x218c8a2a07e68d2e581f618e41f6f885f8331617f5719ab849f2c8e40252e9cb-251",
+      "type": "NFT",
+      "account": "0x5FE1D38D7f17233dFdc1352F27d9F1eE92D69014",
+      "detail": "Recruited 1 Agent Legend (#413)",
+      "txHash": "0x218c8a2a07e68d2e581f618e41f6f885f8331617f5719ab849f2c8e40252e9cb",
+      "blockNumber": 134708021
+    },
+    {
+      "id": "0xe156338e4bfa8253e808e499bc8317e7b844e2f3240dba92c5ceef5f35349de3-342",
+      "type": "NFT",
+      "account": "0x0aEea8456Df1D4028C8B36fcd93c386E258EB9a1",
+      "detail": "Recruited 1 Agent Legend (#412)",
+      "txHash": "0xe156338e4bfa8253e808e499bc8317e7b844e2f3240dba92c5ceef5f35349de3",
+      "blockNumber": 134706335
+    },
+    {
+      "id": "0x1fd2506e9d6db0c8e82425bffd011a6ad8e9b719e548bf75b8b32ef11a011e09-83",
+      "type": "NFT",
+      "account": "0x5E9BB9B58B5B8630Ff83A8198A5522f5ADcfb12b",
+      "detail": "Recruited 1 Agent Legend (#411)",
+      "txHash": "0x1fd2506e9d6db0c8e82425bffd011a6ad8e9b719e548bf75b8b32ef11a011e09",
+      "blockNumber": 134705230
+    },
+    {
+      "id": "0x9bf44afbd5a2594c3c4e8e1447476197b3c285bceb51423c96bcfcbc4adea4d2-510",
+      "type": "NFT",
+      "account": "0x1986fE354713dB9e7420dE472Df35eEA5F9527eC",
+      "detail": "Recruited 1 Agent Legend (#410)",
+      "txHash": "0x9bf44afbd5a2594c3c4e8e1447476197b3c285bceb51423c96bcfcbc4adea4d2",
+      "blockNumber": 134701633
+    },
+    {
+      "id": "0x824fde94586e77719836abd2d7a2c02a65c3804a4a2cb076237912b5841928df-409",
+      "type": "NFT",
+      "account": "0x007bB0367DBeFef9cAa2b6909C567918aA08ddcc",
+      "detail": "Recruited 1 Agent Legend (#409)",
+      "txHash": "0x824fde94586e77719836abd2d7a2c02a65c3804a4a2cb076237912b5841928df",
+      "blockNumber": 134701316
+    },
+    {
+      "id": "0x96ac839b5b835b18d8c932d49c3c71236b4bf0eb4c3a5e8302ba1f121bb65910-186",
+      "type": "NFT",
+      "account": "0x49D597cd49611855Da6D20AC8cD21adc65EFC278",
+      "detail": "Recruited 1 Agent Legend (#408)",
+      "txHash": "0x96ac839b5b835b18d8c932d49c3c71236b4bf0eb4c3a5e8302ba1f121bb65910",
+      "blockNumber": 134701286
+    },
+    {
+      "id": "0x7655ba6529ba0a6aafdc4b2c02389d0e01d8481d8454cb34867c64f6a752fd95-472",
+      "type": "NFT",
+      "account": "0x5065a8Eba4B1328C16549A4Def6635D2E285ca2b",
+      "detail": "Recruited 1 Agent Legend (#407)",
+      "txHash": "0x7655ba6529ba0a6aafdc4b2c02389d0e01d8481d8454cb34867c64f6a752fd95",
+      "blockNumber": 134701114
+    }
+  ],
+  "leaderboard": {
+    "nftMinters": [
+      {
+        "wallet": "0x61d9e9428abdbee5197a23c0636568c716987c82",
+        "value": 50,
+        "secondary": "50 NFTs recruited"
+      },
+      {
+        "wallet": "0xff892c6231b953447827c7796ce8e03d1eb0032b",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x4ff52c3794a0e4cc547bcf57d3ac74d5ccb19f03",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x4d50dd3e57d1f4adade559bd075bca0496aaa29b",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xf28b23fc7f7c42b9626e0927d6875c7795a7d3d2",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xf42cdb15d7949309ef2c0063443e94d0307eb631",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xeb4d3768e8d62d13c0f5ab1e41b89f2649ba8f36",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xdb502b901ad40fe9714c2aa1ec83b2db3a86c208",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xccfaa6a7dbc37957c262bbf262765d2283d1c3b3",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xe24ae46004f02f79c35954eb61ff3723b7e22084",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xe55ced81314edf295594fecc1ed5f27d5d3b2eae",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x798c87dc6f9ce1df9944a42c522013f22809397c",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xc8e6a46c8779eacabc76e2abc2335e02f220d0cd",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xe1e005fa06e1ce43797c5a936ba59b824453d8bb",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0xa96ba2ecacbcc0e986313cbe6d061798d983786f",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x30588cfbce27269d4e76128c7ed934e270c9c927",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x61d5353152b2573786bf640e289a12e00c7c3df1",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x8f91643de74f0ee0e7f3856d84854291d2ef4209",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x6b72acc3255d53018befb1731b6e435178842a5d",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      },
+      {
+        "wallet": "0x5170e8bbbe02427dbe8421723664432ae58a515f",
+        "value": 1,
+        "secondary": "1 NFTs recruited"
+      }
+    ],
+    "shareBuyers": [
+      {
+        "wallet": "0xf28b23fc7f7c42b9626e0927d6875c7795a7d3d2",
+        "value": 1,
+        "secondary": "1 share · $0.50 USDT"
+      }
+    ],
+    "referrers": [
+      {
+        "wallet": "0x61d9e9428abdbee5197a23c0636568c716987c82",
+        "value": 12,
+        "secondary": "12 invites · $6.00 USDT earned"
+      },
+      {
+        "wallet": "0xf28B23fc7F7C42B9626E0927D6875c7795a7D3d2",
+        "value": 5,
+        "secondary": "5 invites · $2.50 USDT earned"
+      }
+    ]
+  }
+}
