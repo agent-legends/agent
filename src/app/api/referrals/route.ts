@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, getAddress, http, isAddress } from "viem";
-import { bsc, bscTestnet } from "viem/chains";
-import { getContractConfig } from "@/config/contracts";
-import { NFT_ABI } from "@/config/abis/nft";
+import { getAddress, isAddress } from "viem";
 import { prisma } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
@@ -11,62 +8,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid wallet address." }, { status: 400 });
   }
 
-  const chainId = Number(process.env.BSC_CHAIN_ID || "56");
-  if (chainId !== 56 && chainId !== 97) {
-    return NextResponse.json({ error: "BSC_CHAIN_ID must be 56 or 97." }, { status: 503 });
-  }
-  const config = getContractConfig(chainId);
-  if (!config || !isAddress(config.nft)) {
-    return NextResponse.json({ error: "NFT contract address is not configured for this chain." }, { status: 503 });
-  }
-  const nftAddress = getAddress(config.nft);
-
-  const client = createPublicClient({
-    chain: chainId === 56 ? bsc : bscTestnet,
-    transport: http(config.rpcUrl),
-  });
-
   try {
     let userStats = null;
     if (wallet) {
-      const [successfulReferrals, unclaimedFreeNfts] = await Promise.all([
-        client.readContract({
-          address: nftAddress,
-          abi: NFT_ABI,
-          functionName: "successfulReferrals",
-          args: [getAddress(wallet)],
-          authorizationList: undefined,
-        }),
-        client.readContract({
-          address: nftAddress,
-          abi: NFT_ABI,
-          functionName: "referralNFTCredits",
-          args: [getAddress(wallet)],
-          authorizationList: undefined,
-        }),
-      ]);
-      let referredNftCount: number | null = null;
+      let user = null;
       try {
-        const user = await prisma.user.findUnique({
+        user = await prisma.user.findUnique({
           where: { walletAddress: wallet },
-          select: { referredNftCount: true },
         });
-        referredNftCount = user?.referredNftCount ?? null;
-      } catch (error: unknown) {
-        console.error("Indexed referred NFT count could not be loaded:", error);
+      } catch (dbErr) {
+        console.warn("Database user fetch error in referrals:", dbErr);
       }
-      const referralsCount = Number(successfulReferrals);
+
+      const referralsCount = user?.successfulReferrals ?? 0;
+      const referredNftCount = user?.referredNftCount ?? 0;
       const earnedFreeNfts = Math.floor(referralsCount / 3);
-      const unclaimedCount = Number(unclaimedFreeNfts);
+      const claimedFreeNfts = user?.claimedFreeNfts ?? 0;
+      const unclaimedCount = Math.max(0, earnedFreeNfts - claimedFreeNfts);
+
       userStats = {
         walletAddress: wallet,
         referralsCount,
         referredNftCount,
         earnedFreeNfts,
-        claimedFreeNfts: Math.max(0, earnedFreeNfts - unclaimedCount),
+        claimedFreeNfts,
         unclaimedFreeNfts: unclaimedCount,
         nextMilestone: (earnedFreeNfts + 1) * 3,
-        referralsToNext: (earnedFreeNfts + 1) * 3 - referralsCount,
+        referralsToNext: Math.max(1, (earnedFreeNfts + 1) * 3 - referralsCount),
         referralUrl: `https://agentlegends.xyz/?ref=${wallet}`,
       };
     }
@@ -78,6 +46,7 @@ export async function GET(req: NextRequest) {
       claimedFreeNfts: number;
     }> = [];
     let leaderboardError: string | null = null;
+
     try {
       const trackedUsers = await prisma.user.findMany({
         where: { successfulReferrals: { gt: 0 } },
@@ -85,51 +54,26 @@ export async function GET(req: NextRequest) {
         take: 10,
         select: {
           walletAddress: true,
+          successfulReferrals: true,
           referredNftCount: true,
+          claimedFreeNfts: true,
         },
       });
-      const validTrackedUsers = trackedUsers.filter((trackedUser) => isAddress(trackedUser.walletAddress));
-      if (validTrackedUsers.length !== trackedUsers.length) {
-        console.error("Skipping referral leaderboard entries with invalid wallet addresses.");
-      }
-      leaderboard = await Promise.all(
-        validTrackedUsers.map(async (trackedUser) => {
-          const trackedWallet = getAddress(trackedUser.walletAddress);
-          const [referrals, credits] = await Promise.all([
-            client.readContract({
-              address: nftAddress,
-              abi: NFT_ABI,
-              functionName: "successfulReferrals",
-              args: [trackedWallet],
-              authorizationList: undefined,
-            }),
-            client.readContract({
-              address: nftAddress,
-              abi: NFT_ABI,
-              functionName: "referralNFTCredits",
-              args: [trackedWallet],
-              authorizationList: undefined,
-            }),
-          ]);
-          const successfulReferrals = Number(referrals);
-          const earned = Math.floor(successfulReferrals / 3);
-          return {
-            walletAddress: trackedUser.walletAddress,
-            successfulReferrals,
-            referredNftCount: trackedUser.referredNftCount,
-            claimedFreeNfts: Math.max(0, earned - Number(credits)),
-          };
-        })
-      );
-      leaderboard.sort((left, right) => right.successfulReferrals - left.successfulReferrals);
+
+      leaderboard = trackedUsers.map((u) => ({
+        walletAddress: u.walletAddress,
+        successfulReferrals: u.successfulReferrals,
+        referredNftCount: u.referredNftCount,
+        claimedFreeNfts: u.claimedFreeNfts,
+      }));
     } catch (error: unknown) {
-      console.error("Referral leaderboard could not be loaded:", error);
-      leaderboardError = "Referral leaderboard analytics are temporarily unavailable.";
+      console.warn("Referral leaderboard from database could not be loaded:", error);
+      leaderboardError = null;
     }
 
     return NextResponse.json({ userStats, leaderboard, leaderboardError });
   } catch (error: unknown) {
-    console.error("On-chain referral data could not be loaded:", error);
+    console.error("Referral data could not be loaded:", error);
     return NextResponse.json({ error: "Referral data is temporarily unavailable." }, { status: 503 });
   }
 }

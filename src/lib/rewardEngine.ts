@@ -26,7 +26,7 @@ export async function getVerifiedRewardMilestone(): Promise<RewardMilestoneStatu
   const minted = await client.readContract({
     address: config.nft,
     abi: NFT_ABI,
-    functionName: "totalMinted",
+    functionName: "totalSupply",
     authorizationList: undefined,
   });
   const mintedCount = Number(minted);

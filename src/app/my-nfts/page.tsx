@@ -28,7 +28,6 @@ export default function MyNftsPage() {
         <p>Collection balance is read from the NFT contract. Token IDs are not enumerable by this deployment, so this page does not fabricate NFT cards or traits.</p>
         <div className="collection-actions">
           <Link href="/mint"><Sparkles aria-hidden="true" /> Mint an Agent Legend</Link>
-          <Link href="/staking"><LockKeyhole aria-hidden="true" /> Open staking</Link>
         </div>
       </header>
 

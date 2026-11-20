@@ -25,8 +25,8 @@ export default function ReferralsPage() {
         <AgenticPromptBox
           title="Agentic Wallet Referral Prompt"
           action="Referral & Rewards"
-          prompt="Generate and copy Agent Legends referral link with wallet address for BNB Chain (Chain ID: 56). 3 referred mints unlock 1 free bonus Agent Legend NFT."
-          contractAddress="0x3d8b78084BF69936AF661DD33C6F95f345E93702"
+          prompt="Generate and copy Agent Legends referral link with wallet address for BNB Chain (Chain ID: 56). Share your link with fellow agents to grow your syndicate."
+          contractAddress="0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912"
         />
       </div>
     </div>

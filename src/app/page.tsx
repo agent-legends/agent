@@ -1,13 +1,15 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Award,
   CheckCircle2,
-  Disc3,
-  LockKeyhole,
+  Cpu,
+  FileText,
+  LayoutDashboard,
   Shield,
+  ShieldCheck,
   Sparkles,
   Users,
+  Zap,
 } from "lucide-react";
 import { StatsHeader } from "@/components/StatsHeader";
 
@@ -17,32 +19,32 @@ const features = [
     icon: Sparkles,
     title: "Mint your legend",
     description:
-      "The NFT mint is free. A $0.10 platform fee per NFT is payable in BNB, plus network gas.",
+      "First mint is FREE for verified Agentic Wallets. Paid mints available up to 9 per wallet at 0.0005 BNB each.",
     action: "Open mint",
   },
   {
-    href: "/staking",
-    icon: LockKeyhole,
-    title: "Stake for spin credits",
+    href: "/my-nfts",
+    icon: LayoutDashboard,
+    title: "Operative Roster",
     description:
-      "Stake an eligible NFT for at least 72 hours. Its first successful stake grants one initial spin credit.",
-    action: "View staking",
-  },
-  {
-    href: "/spin",
-    icon: Disc3,
-    title: "Use your spins",
-    description:
-      "Review the disclosed reward odds, spin result, and manual USDT payout status.",
-    action: "Open the wheel",
+      "Track your recruited Agent Legends directly on BNB Smart Chain. Verify your on-chain ownership.",
+    action: "View your collection",
   },
   {
     href: "/referrals",
     icon: Users,
     title: "Grow your network",
     description:
-      "Three successful referrals unlock one free NFT, subject to eligibility and collection supply.",
-    action: "Get your referral link",
+      "Share your unique recruitment link with other Web3 operatives and track your community reach.",
+    action: "Get referral link",
+  },
+  {
+    href: "/docs",
+    icon: FileText,
+    title: "Protocol Docs & AI Prompts",
+    description:
+      "Explore the 2,000 cap smart contract architecture, Agent ID verification, and agentic wallet prompts.",
+    action: "Read documentation",
   },
 ];
 
@@ -61,18 +63,18 @@ export default function HomePage() {
             BEGINS <span>HERE.</span>
           </h1>
           <p>
-            Enter the world of Agent Legends. Mint your NFT, stake your identity,
-            earn spin opportunities, and join the next generation of AI-powered Web3.
+            Enter the world of Agent Legends. Verify your Agentic Wallet, recruit your
+            legendary on-chain operatives, and join the next generation of AI-powered Web3 on BNB Smart Chain.
           </p>
 
           <div className="home-actions">
             <Link href="/mint" className="home-button home-button-primary">
               <Sparkles aria-hidden="true" />
-              Mint your NFT
+              Recruit Operative
               <ArrowRight aria-hidden="true" />
             </Link>
-            <Link href="/explore" className="home-button home-button-secondary">
-              Explore collection
+            <Link href="/my-nfts" className="home-button home-button-secondary">
+              My Collection
             </Link>
             <a
               href="https://x.com/agent_legends"
@@ -89,9 +91,9 @@ export default function HomePage() {
           </div>
 
           <ul className="home-hero-points">
-            <li><CheckCircle2 aria-hidden="true" /> Free NFT mint</li>
-            <li><CheckCircle2 aria-hidden="true" /> $0.10 platform fee per NFT + gas</li>
-            <li><CheckCircle2 aria-hidden="true" /> 72-hour staking lock</li>
+            <li><CheckCircle2 aria-hidden="true" /> 1 Free Mint for Agent Wallets</li>
+            <li><CheckCircle2 aria-hidden="true" /> 0.0005 BNB Paid Mint (Max 9)</li>
+            <li><CheckCircle2 aria-hidden="true" /> 2,000 Max Supply Cap</li>
           </ul>
         </div>
 
@@ -112,29 +114,29 @@ export default function HomePage() {
           <h2>Own your identity. Enter the arena.</h2>
           <div className="home-process">
             <div className="home-process-item">
+              <span className="home-process-icon"><ShieldCheck aria-hidden="true" /></span>
+              <div>
+                <strong>01 · Verify Agent ID</strong>
+                <p>Binance Agent ID holders automatically qualify for 1 Free Agent Legend mint.</p>
+              </div>
+            </div>
+            <div className="home-process-item">
               <span className="home-process-icon"><Sparkles aria-hidden="true" /></span>
               <div>
-                <strong>01 · Mint</strong>
-                <p>Mint free. The contract quotes a $0.10-per-NFT platform fee in BNB.</p>
+                <strong>02 · Mint Your Operatives</strong>
+                <p>Claim your free agent or mint up to 9 paid NFTs for 0.0005 BNB each.</p>
               </div>
             </div>
             <div className="home-process-item">
-              <span className="home-process-icon"><LockKeyhole aria-hidden="true" /></span>
+              <span className="home-process-icon"><Users aria-hidden="true" /></span>
               <div>
-                <strong>02 · Stake</strong>
-                <p>Stake an NFT for 72 hours and get one initial spin credit on first stake.</p>
-              </div>
-            </div>
-            <div className="home-process-item">
-              <span className="home-process-icon"><Award aria-hidden="true" /></span>
-              <div>
-                <strong>03 · Participate</strong>
-                <p>Invite friends and track spin results and manually processed rewards.</p>
+                <strong>03 · Build Your Syndicate</strong>
+                <p>Invite fellow Web3 agents and track recruitment across BNB Chain.</p>
               </div>
             </div>
           </div>
           <p className="home-fee-note">
-            Minting is free. The platform fee is separate from gas and is not an NFT purchase price.
+            Total supply is capped strictly at 2,000 NFTs on BNB Smart Chain.
           </p>
         </aside>
       </section>
@@ -164,7 +166,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
     </div>
   );
 }

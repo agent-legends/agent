@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { createPublicClient, http, isAddress } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { NFT_ABI } from "@/config/abis/nft";
-import { getContractConfig } from "@/config/contracts";
+import {
+  getContractConfig,
+  MAX_SUPPLY,
+  MAX_FREE_SUPPLY,
+  MAX_PER_WALLET,
+  MAX_PAID_PER_WALLET,
+  PAID_PRICE_BNB,
+} from "@/config/contracts";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
@@ -24,15 +31,18 @@ export async function GET() {
     transport: http(config.rpcUrl),
   });
 
-  let totalMinted = 1;
-  let maxSupply = 10000;
+  let totalMinted = 4;
+  let maxSupply = MAX_SUPPLY;
+  let freeMintedCount = 4;
+  let remainingFree = 996;
+  let isPaused = false;
 
   try {
-    const [minted, maximum] = await Promise.all([
+    const [minted, maximum, freeMinted, freeRem, paused] = await Promise.all([
       client.readContract({
         address: config.nft,
         abi: NFT_ABI,
-        functionName: "totalMinted",
+        functionName: "totalSupply",
         authorizationList: undefined,
       }),
       client.readContract({
@@ -41,78 +51,51 @@ export async function GET() {
         functionName: "MAX_SUPPLY",
         authorizationList: undefined,
       }),
+      client.readContract({
+        address: config.nft,
+        abi: NFT_ABI,
+        functionName: "freeMintedCount",
+        authorizationList: undefined,
+      }),
+      client.readContract({
+        address: config.nft,
+        abi: NFT_ABI,
+        functionName: "remainingFreeSupply",
+        authorizationList: undefined,
+      }),
+      client.readContract({
+        address: config.nft,
+        abi: NFT_ABI,
+        functionName: "mintPaused",
+        authorizationList: undefined,
+      }),
     ]);
     totalMinted = Number(minted);
     maxSupply = Number(maximum);
+    freeMintedCount = Number(freeMinted);
+    remainingFree = Number(freeRem);
+    isPaused = Boolean(paused);
   } catch (onChainError) {
     console.warn("Could not read on-chain supply from RPC:", onChainError);
   }
 
-  let indexedStatsAvailable = true;
-  let indexed: {
-    totalStaked: number | null;
-    totalSpins: number | null;
-    totalWinners: number | null;
-    totalRewardsDistributedUsdt: number | null;
-    pendingPayoutsCount: number | null;
-    pendingPayoutsAmountUsdt: number | null;
-    paidPayoutsAmountUsdt: number | null;
-    totalUsers: number | null;
-  } = {
-    totalStaked: 0,
-    totalSpins: 0,
-    totalWinners: 0,
-    totalRewardsDistributedUsdt: 0,
-    pendingPayoutsCount: 0,
-    pendingPayoutsAmountUsdt: 0,
-    paidPayoutsAmountUsdt: 0,
-    totalUsers: 0,
-  };
-
+  let totalUsers = 0;
   try {
-    const [
-      staked,
-      totalUsers,
-      totalSpins,
-      totalWinningSpins,
-      pendingPayouts,
-      paidPayouts,
-    ] = await Promise.all([
-      prisma.user.aggregate({ _sum: { totalStaked: true } }).catch(() => ({ _sum: { totalStaked: 0 } })),
-      prisma.user.count().catch(() => 0),
-      prisma.spin.count().catch(() => 0),
-      prisma.spin.count({ where: { isWinner: true } }).catch(() => 0),
-      prisma.payout.aggregate({
-        where: { status: { in: ["PENDING", "PROCESSING"] } },
-        _sum: { rewardAmountUsdt: true },
-        _count: true,
-      }).catch(() => ({ _sum: { rewardAmountUsdt: 0 }, _count: 0 })),
-      prisma.payout.aggregate({
-        where: { status: "PAID" },
-        _sum: { rewardAmountUsdt: true },
-      }).catch(() => ({ _sum: { rewardAmountUsdt: 0 } })),
-    ]);
-    indexed = {
-      totalStaked: staked._sum.totalStaked ?? 0,
-      totalSpins,
-      totalWinners: totalWinningSpins,
-      totalRewardsDistributedUsdt: paidPayouts._sum.rewardAmountUsdt ?? 0,
-      pendingPayoutsCount: pendingPayouts._count,
-      pendingPayoutsAmountUsdt: pendingPayouts._sum.rewardAmountUsdt ?? 0,
-      paidPayoutsAmountUsdt: paidPayouts._sum.rewardAmountUsdt ?? 0,
-      totalUsers,
-    };
-  } catch (error: unknown) {
-    console.error("Indexed platform statistics could not be loaded:", error);
-    indexedStatsAvailable = false;
+    totalUsers = await prisma.user.count().catch(() => 0);
+  } catch {
+    totalUsers = 0;
   }
 
   return NextResponse.json({
     totalSupply: maxSupply,
     totalMinted,
+    freeMintedCount,
     remainingSupply: Math.max(0, maxSupply - totalMinted),
-    platformFeeUsdPerNft: 0.1,
-    indexedStatsAvailable,
-    ...indexed,
+    remainingFreeSupply: remainingFree,
+    paidPriceBnb: Number(PAID_PRICE_BNB),
+    maxPaidPerWallet: MAX_PAID_PER_WALLET,
+    maxPerWallet: MAX_PER_WALLET,
+    mintPaused: isPaused,
+    totalUsers,
   });
 }

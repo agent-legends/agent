@@ -19,8 +19,8 @@ export function Footer() {
               <span>Agent Legends 2.0</span>
             </div>
             <p className="mt-2 text-slate-400 text-sm">
-              The next generation of Web3 identity on BNB Smart Chain.
-              Minting, staking, spin rewards, and community referrals.
+              The next generation of AI Web3 identity on BNB Smart Chain.
+              Agentic wallet minting, on-chain verification, and community referrals.
             </p>
             <div className="mt-4">
               <a
@@ -41,22 +41,21 @@ export function Footer() {
             <h2>Explore</h2>
             <ul>
               <li><Link href="/mint">Mint an NFT</Link></li>
-              <li><Link href="/explore">Explore collection</Link></li>
               <li><Link href="/my-nfts">My collection</Link></li>
-              <li><Link href="/staking">Staking</Link></li>
-              <li><Link href="/spin">Spin rewards</Link></li>
               <li><Link href="/referrals">Referrals</Link></li>
+              <li><Link href="/leaderboard">Leaderboard</Link></li>
+              <li><Link href="/docs">Documentation</Link></li>
             </ul>
           </section>
 
           <section>
             <h2>Protocol rules</h2>
             <ul>
-              <li>10,000 NFT maximum supply</li>
-              <li>Free mint; $0.10 BNB platform fee per NFT, plus gas</li>
-              <li>72-hour staking lock</li>
-              <li>3 successful referrals unlock 1 free NFT</li>
-              <li>USDT payouts are manually verified</li>
+              <li>2,000 NFT maximum collection supply</li>
+              <li>1 Free Mint for verified Agentic Wallets</li>
+              <li>Paid mint: 0.0005 BNB each (up to 9 per wallet)</li>
+              <li>Maximum 10 NFTs total per wallet</li>
+              <li>1,000 free mints reserved for Binance Agent ID holders</li>
             </ul>
           </section>
         </div>

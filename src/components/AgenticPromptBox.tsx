@@ -15,7 +15,7 @@ export function AgenticPromptBox({
   title = "Agentic Wallet Prompt",
   action,
   prompt,
-  contractAddress = "0x3d8b78084BF69936AF661DD33C6F95f345E93702",
+  contractAddress = "0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912",
   network = "BNB Smart Chain (56)",
 }: AgenticPromptBoxProps) {
   const [copied, setCopied] = useState(false);

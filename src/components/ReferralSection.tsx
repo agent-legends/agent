@@ -1,17 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useChainId,
-} from "wagmi";
-import { bsc, bscTestnet } from "wagmi/chains";
-import { Users, Copy, Check, Gift, Crown, Trophy, Sparkles, ExternalLink, AlertCircle } from "lucide-react";
-import { getContractConfig } from "@/config/contracts";
-import { NFT_ABI } from "@/config/abis/nft";
-import { getAddress, isAddress } from "viem";
+import { useAccount } from "wagmi";
+import Link from "next/link";
+import { Users, Copy, Check, Gift, Crown, Trophy, Sparkles, AlertCircle } from "lucide-react";
 
 interface ReferralUserStats {
   walletAddress: string;
@@ -33,23 +25,11 @@ interface LeaderboardItem {
 }
 
 export function ReferralSection() {
-  const { isConnected, address } = useAccount();
-  const chainId = useChainId();
+  const { address } = useAccount();
   const [copied, setCopied] = useState<boolean>(false);
   const [stats, setStats] = useState<ReferralUserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
-  const [claimError, setClaimError] = useState<string | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [syncedHash, setSyncedHash] = useState<string | null>(null);
-
-  const activeContractConfig = getContractConfig(chainId);
-  const chain = chainId === 97 ? bscTestnet : bsc;
-
-  const { data: hash, isPending: isClaimPending, writeContractAsync } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-    confirmations: 3,
-  });
 
   const fetchReferralData = () => {
     const url = address ? `/api/referrals?wallet=${address}` : "/api/referrals";
@@ -73,24 +53,6 @@ export function ReferralSection() {
     fetchReferralData();
   }, [address]);
 
-  useEffect(() => {
-    if (!isConfirmed || !hash || !address || syncedHash === hash) return;
-    setSyncedHash(hash);
-    fetch("/api/referrals/claim/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: address, txHash: hash }),
-    })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Referral claim could not be synchronized.");
-        await fetchReferralData();
-      })
-      .catch((error: unknown) => {
-        setClaimError(error instanceof Error ? error.message : "Referral claim could not be synchronized.");
-      });
-  }, [isConfirmed, hash, address, syncedHash]);
-
   const referralUrl = address
     ? `https://agentlegends.xyz/?ref=${address}`
     : "https://agentlegends.xyz/?ref=0xYourWalletAddress";
@@ -101,30 +63,9 @@ export function ReferralSection() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleClaimFreeNft = async () => {
-    if (!stats || stats.unclaimedFreeNfts <= 0) return;
-    if (!address || !activeContractConfig || !isAddress(activeContractConfig.nft)) {
-      setClaimError("Connect a wallet on BNB Smart Chain to claim.");
-      return;
-    }
-    setClaimError(null);
-    try {
-      await writeContractAsync({
-        address: getAddress(activeContractConfig.nft),
-        account: address,
-        abi: NFT_ABI,
-        functionName: "claimReferralNFT",
-        chain,
-      });
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setClaimError(errorMsg);
-    }
-  };
-
   // Milestone calculation
   const referralsCount = stats?.referralsCount || 0;
-  const progressToNext = (referralsCount % 3);
+  const progressToNext = referralsCount % 3;
   const progressPercent = Math.min(100, Math.round((progressToNext / 3) * 100));
 
   return (
@@ -138,10 +79,10 @@ export function ReferralSection() {
               <span>AGENT ALLIANCE SYNDICATE</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-wider font-mono">
-              Referral Protocol: 3 Wallets = 1 Free NFT
+              Syndicate Referral Protocol
             </h2>
             <p className="text-xs text-slate-400">
-              Every 3 successfully referred wallets unlocks 1 free Agent Legends NFT. Milestones are cumulative.
+              Invite fellow AI agents and collectors to recruit their operatives into the 2,000 capped collection.
             </p>
           </div>
 
@@ -184,7 +125,7 @@ export function ReferralSection() {
             </button>
           </div>
           <p className="text-[11px] text-slate-500 font-mono">
-            * Referrals are permanently attributed upon the referee's first successful mint. Self-referrals are strictly rejected by the smart contract.
+            * Referrals are permanently recorded upon your referee&apos;s first successful mint.
           </p>
         </div>
 
@@ -193,10 +134,10 @@ export function ReferralSection() {
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-slate-300 font-bold flex items-center space-x-1.5">
               <Gift className="w-4 h-4 text-[#00FF66]" />
-              <span>Next Free NFT Milestone ({progressToNext}/3 Wallets)</span>
+              <span>Community Recruitment Milestone ({progressToNext}/3 Wallets)</span>
             </span>
             <span className="text-[#00E5FF]">
-              {3 - progressToNext === 3 ? "3 referrals needed for next reward" : `${3 - progressToNext} more referral${3 - progressToNext > 1 ? "s" : ""} to unlock`}
+              {3 - progressToNext === 3 ? "3 referrals needed for next tier" : `${3 - progressToNext} more referral${3 - progressToNext > 1 ? "s" : ""} to unlock`}
             </span>
           </div>
           <div className="w-full bg-slate-900 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800">
@@ -207,7 +148,7 @@ export function ReferralSection() {
           </div>
           <div className="flex justify-between text-[11px] font-mono text-slate-500">
             <span>Current: {referralsCount} Referred</span>
-            <span>Next Free NFT at: {((Math.floor(referralsCount / 3) + 1) * 3)} Wallets</span>
+            <span>Next Tier: {((Math.floor(referralsCount / 3) + 1) * 3)} Wallets</span>
           </div>
         </div>
 
@@ -223,24 +164,23 @@ export function ReferralSection() {
                   You Have {stats.unclaimedFreeNfts} Unclaimed Free NFT{stats.unclaimedFreeNfts > 1 ? "s" : ""}!
                 </h4>
                 <p className="text-xs text-slate-300">
-                  Earned through the 3 referrals = 1 free NFT milestone. Counts toward 10,000 maximum supply.
+                  Claim your free agent legend directly on the minting portal.
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleClaimFreeNft}
-              disabled={isClaimPending || isConfirming}
+            <Link
+              href="/mint"
               className="px-6 py-3 rounded-xl bg-[#00FF66] text-[#07090E] font-black font-mono text-xs tracking-wider uppercase hover:bg-[#00CC52] transition-all shadow-neon-green flex items-center justify-center space-x-2"
             >
-              <span>{isClaimPending || isConfirming ? "Minting Free NFT..." : "Claim Free NFT (0 BNB)"}</span>
-            </button>
+              <span>Go to Mint Portal</span>
+            </Link>
           </div>
         )}
 
-        {(claimError || dataError) && (
+        {dataError && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center space-x-2 font-mono">
             <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span>{claimError || dataError}</span>
+            <span>{dataError}</span>
           </div>
         )}
       </div>

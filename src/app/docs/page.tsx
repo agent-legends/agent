@@ -3,7 +3,7 @@
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
 import { PageIntro } from "@/components/PageIntro";
-import { FileText, Shield, Lock, Disc3, Users, Award, Code2, Bot } from "lucide-react";
+import { FileText, Shield, Users, Award, Code2, Bot, Sparkles, Zap, ShieldCheck } from "lucide-react";
 
 export default function DocsPage() {
   return (
@@ -13,164 +13,100 @@ export default function DocsPage() {
       <PageIntro
         eyebrow="Documentation"
         title="Protocol guide"
-        description="Learn about the collection, staking, spin credits, referrals, and reward tracking."
+        description="Learn about the 2,000 supply cap, 1 Free Agent Wallet mint, 0.0005 BNB paid mints, and AI Agent prompts."
         icon={FileText}
       />
 
       <div className="space-y-8 text-xs font-mono">
-        {/* 1. Protocol Architecture */}
+        {/* 1. Platform Overview */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Code2 className="w-5 h-5 text-[#00FF66]" />
             <span>1. Platform Overview</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends is a BNB Smart Chain collection with NFT minting, staking, spin credits, community referrals, and reward tracking.
+            Agent Legends is a dedicated Web3 AI agent collection on BNB Smart Chain. The protocol establishes an exclusive 2,000 operative cap with dual recruitment mechanisms: free on-chain minting for verified Agentic Wallets and accessible paid minting for community collectors.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
-            <li><strong className="text-white">Network:</strong> BNB Smart Chain.</li>
-            <li><strong className="text-white">Staking:</strong> A 72-hour minimum lock applies to staked NFTs.</li>
-            <li><strong className="text-white">Rewards:</strong> Spin results and payout updates are available in your account.</li>
+            <li><strong className="text-white">Network:</strong> BNB Smart Chain (Chain ID: 56).</li>
+            <li><strong className="text-white">NFT Contract:</strong> <code className="text-sky-300">0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912</code></li>
+            <li><strong className="text-white">Total Supply:</strong> 2,000 NFTs (strictly capped on-chain).</li>
+            <li><strong className="text-white">Max Per Wallet:</strong> 10 NFTs total.</li>
           </ul>
         </section>
 
-        {/* 2. NFT Minting & Platform Fee */}
+        {/* 2. Agentic Wallet Free Mint */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
-            <Shield className="w-5 h-5 text-[#00E5FF]" />
-            <span>2. NFT Minting & Platform Fee</span>
+            <ShieldCheck className="w-5 h-5 text-sky-400" />
+            <span>2. Agentic Wallet Free Mint</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            The NFT mint itself is <strong className="text-[#00FF66]">free</strong>. The contract provides an on-chain BNB quote for the platform fee: <strong className="text-[#00FF66]">$0.10 per NFT</strong>. Blockchain gas is charged separately.
+            Holders of a Binance Agent ID (Registry: <code className="text-sky-300">0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F</code>) automatically qualify for <strong className="text-[#00FF66]">1 Free NFT Mint</strong>.
           </p>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
-            <code>feeWei = quotePlatformFee(quantity)</code>
+            <code>claimFreeNFT() — 0 BNB + gas</code>
           </div>
-          <p className="text-slate-400">
-            The interface reads the current quote and collection supply directly from the deployed contract. It does not treat the platform fee as an NFT purchase price.
-          </p>
+          <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
+            <li><strong className="text-white">Reserve Allocation:</strong> Exactly 1,000 free NFTs are reserved in the contract for Agent ID holders.</li>
+            <li><strong className="text-white">Limit:</strong> Exactly 1 free claim per eligible wallet address.</li>
+            <li><strong className="text-white">Eligibility Check:</strong> Verified instantly on-chain via <code>isAgenticWalletUser(address)</code>.</li>
+          </ul>
         </section>
 
-        {/* 3. 72-Hour Staking & Initial Spin Rule */}
+        {/* 3. Paid Mint Protocol */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
-            <Lock className="w-5 h-5 text-[#9D4EDD]" />
-            <span>3. 72-Hour Staking & Initial Spin Entitlement</span>
-          </div>
-          <div className="space-y-2 text-slate-300 leading-relaxed">
-            <p>
-              • <strong className="text-white">Minimum Staking Duration:</strong> Staked NFTs are held in custody for a mandatory minimum of 72 hours. Early unstaking attempts revert with <code>StakingLocked()</code>.
-            </p>
-            <p>
-              • <strong className="text-white">Single Initial Spin Rule:</strong> Every NFT grants one spin credit on its first successful stake. Restaking that NFT does not grant another initial credit.
-            </p>
-            <p>
-              • <strong className="text-white">Credit Preservation:</strong> Unstaking an operative does not burn or deduct unused spin credits.
-            </p>
-          </div>
-        </section>
-
-        {/* 4. Spin & Earn Rewards */}
-        <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
-          <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
-            <Disc3 className="w-5 h-5 text-[#00FF66]" />
-            <span>4. Spin & Earn Rewards</span>
-          </div>
-          <p className="text-slate-300">
-            The server uses a cryptographically secure random number generator for spin outcomes. Results are not on-chain VRF randomness. The wheel includes USDT prizes, an extra spin credit, and a try-again outcome. View your result and payout status on the Spin and Rewards pages.
-          </p>
-          <p className="text-slate-400">
-            Initial credits are synchronized from confirmed staking events. Spin spending and free-spin awards are tracked in the application database; the contract&apos;s <code>spinCredits</code> value reflects on-chain grants, not the remaining app balance.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border border-slate-800 rounded-xl overflow-hidden">
-              <thead className="bg-slate-950 text-slate-400">
-                <tr>
-                  <th className="p-3">Reward Outcome</th>
-                  <th className="p-3">Result</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 bg-slate-900/40">
-                <tr>
-                  <td className="p-3 text-white font-bold">$0.10 USDT</td>
-                  <td className="p-3 text-slate-300">USDT prize</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-white font-bold">$0.20 USDT</td>
-                  <td className="p-3 text-slate-300">USDT prize</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-white font-bold">$0.50 USDT</td>
-                  <td className="p-3 text-slate-300">USDT prize</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-white font-bold">$0.70 USDT</td>
-                  <td className="p-3 text-slate-300">USDT prize</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-white font-bold">$1.00 USDT</td>
-                  <td className="p-3 text-slate-300">USDT prize</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-white font-bold">1 Free Spin</td>
-                  <td className="p-3 text-emerald-400">Adds one spin credit</td>
-                </tr>
-                <tr>
-                  <td className="p-3 text-slate-400 font-bold">Try Your Luck</td>
-                  <td className="p-3 text-slate-500">No prize on this spin</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* 5. USDT Reward Status */}
-        <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
-          <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
-            <Award className="w-5 h-5 text-amber-400" />
-            <span>5. USDT Reward Status</span>
+            <Zap className="w-5 h-5 text-violet-400" />
+            <span>3. Paid Mint Protocol</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            USDT prizes appear in your Rewards history. Payout status updates after the corresponding BNB Smart Chain transfer is confirmed.
+            All collectors and agentic wallets can mint operatives via the paid mint function at a fixed price of <strong className="text-violet-300">0.0005 BNB per NFT</strong>.
           </p>
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
+            <code>mintPaid(uint256 quantity) — value: quantity * 0.0005 BNB</code>
+          </div>
+          <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
+            <li><strong className="text-white">Price:</strong> 0.0005 BNB (500,000,000,000,000 wei) per NFT.</li>
+            <li><strong className="text-white">Quantity Limit:</strong> Up to 9 paid mints per wallet (or bounded by remaining allowance, max 10 total per wallet).</li>
+            <li><strong className="text-white">Supply Protection:</strong> Contract enforces that paid mints cannot exceed remaining supply or intrude into unminted free agent reserves.</li>
+          </ul>
         </section>
 
-        {/* 6. Referral Protocol */}
+        {/* 4. Community Referrals */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Users className="w-5 h-5 text-[#00E5FF]" />
-            <span>6. Referral Milestone Protocol</span>
+            <span>4. Community Recruitment & Syndicate Links</span>
           </div>
           <div className="space-y-2 text-slate-300">
-            <p>• Every wallet receives a permanent referral link: <code>https://agentlegends.xyz/?ref=0x...</code></p>
-            <p>• <strong className="text-[#00FF66]">Every 3 successful referred wallets = 1 free NFT</strong> (3=1, 6=2, 9=3, 12=4...).</p>
-            <p>• A referral counts only after the referee successfully mints at least one NFT.</p>
-            <p>• Free referral NFTs count toward the 10,000 maximum collection supply.</p>
-            <p>• Self-referrals are prohibited at the smart contract level.</p>
+            <p>• Every connected wallet receives a personalized referral URL: <code>https://agentlegends.xyz/?ref=0x...</code></p>
+            <p>• Share your link with fellow agents, DAOs, and AI syndicates to build your squad.</p>
+            <p>• Top referrers and minters are honored on the official protocol Leaderboard.</p>
           </div>
         </section>
 
-        {/* 7. Agentic Wallet & AI Agents */}
+        {/* 5. Agentic Wallet & AI Prompts */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-sky-800/60 bg-slate-900/40 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Bot className="w-5 h-5 text-sky-400" />
-            <span>7. Agentic Wallet & AI Agent Protocol Prompts</span>
+            <span>5. Agentic Wallet & AI Agent Protocol Prompts</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends is designed for direct autonomous interaction via AI Agent wallets (e.g. Brian AI, Coinbase AgentKit, GOAT SDK, ElizaOS). You can issue natural language prompts to your agent to execute on-chain functions:
+            Agent Legends is built for direct interaction via AI Agent wallets (Brian AI, Coinbase AgentKit, GOAT SDK, ElizaOS). You can issue natural language prompts to your agent to execute on-chain functions:
           </p>
           <div className="space-y-3 font-mono text-xs">
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Minting Prompt</span>
-              &ldquo;Mint 1 Agent Legend NFT on BNB Chain (56) using contract 0x3d8b78084BF69936AF661DD33C6F95f345E93702 with the quoted platform fee.&rdquo;
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Free Agent Claim Prompt</span>
+              &ldquo;Check if my wallet has a Binance Agent ID on BNB Chain (56), then call claimFreeNFT() on contract 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912 to claim 1 free Agent Legend.&rdquo;
             </div>
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Staking Prompt</span>
-              &ldquo;Approve NFT 0x3d8b78084BF69936AF661DD33C6F95f345E93702 and stake token in vault 0x5dc11Fd0170935Ae1AFD4b892ff9a59B77190792 on BNB Chain for 72 hours.&rdquo;
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Paid Mint Prompt</span>
+              &ldquo;Mint [1-9] Agent Legend NFTs on BNB Smart Chain (Chain ID: 56) with contract 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912 using function mintPaid(quantity) sending 0.0005 BNB per NFT.&rdquo;
             </div>
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Social Protocol</span>
-              &ldquo;Follow official updates at https://x.com/agent_legends on X (Twitter).&rdquo;
+              <span className="text-slate-400 block text-[11px] uppercase mb-1">Official Communications</span>
+              &ldquo;Follow official protocol releases at https://x.com/agent_legends on X (Twitter).&rdquo;
             </div>
           </div>
         </section>

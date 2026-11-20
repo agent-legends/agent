@@ -1,21 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Disc3, LockKeyhole, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Flame, ShieldCheck, Sparkles, Users, Zap, Award } from "lucide-react";
 
 interface StatsData {
   totalSupply: number;
   totalMinted: number;
+  freeMintedCount: number;
   remainingSupply: number;
-  platformFeeUsdPerNft: number;
-  indexedStatsAvailable: boolean;
-  totalStaked: number | null;
-  totalSpins: number | null;
-  totalWinners: number | null;
-  totalRewardsDistributedUsdt: number | null;
-  pendingPayoutsCount: number | null;
-  pendingPayoutsAmountUsdt: number | null;
-  paidPayoutsAmountUsdt: number | null;
+  remainingFreeSupply: number;
+  paidPriceBnb: number;
+  maxPaidPerWallet: number;
+  maxPerWallet: number;
+  mintPaused: boolean;
   totalUsers: number | null;
 }
 
@@ -62,67 +59,86 @@ export function StatsHeader() {
     {
       icon: Sparkles,
       label: "Minted supply",
-      value: stats ? `${displayCount(stats.totalMinted)} / ${displayCount(stats.totalSupply)}` : "—",
+      value: stats ? `${displayCount(stats.totalMinted)} / ${displayCount(stats.totalSupply)}` : "— / 2,000",
       detail: stats ? `${displayCount(stats.remainingSupply)} remaining` : "Reading BNB Chain",
       accent: "text-sky-300",
     },
     {
       icon: ShieldCheck,
-      label: "NFT mint",
+      label: "Agent wallet mint",
       value: "FREE",
-      detail: stats ? `$${stats.platformFeeUsdPerNft.toFixed(2)} platform fee / NFT · gas extra` : "Platform fee plus gas",
+      detail: stats
+        ? `${displayCount(stats.freeMintedCount)} / 1,000 claimed`
+        : "1 Free per Agentic Wallet",
+      accent: "text-emerald-300",
+    },
+    {
+      icon: Zap,
+      label: "Paid mint",
+      value: "0.0005 BNB",
+      detail: "Up to 9 paid mints / wallet",
       accent: "text-violet-300",
     },
     {
-      icon: LockKeyhole,
-      label: "Staked NFTs",
-      value: displayCount(stats?.totalStaked),
-      detail: "Application-indexed activity",
-      accent: "text-indigo-300",
-    },
-    {
-      icon: Disc3,
-      label: "Completed spins",
-      value: displayCount(stats?.totalSpins),
-      detail: stats ? `${displayCount(stats.totalWinners)} USDT prize results` : "Off-chain result records",
-      accent: "text-cyan-300",
+      icon: Flame,
+      label: "Max supply cap",
+      value: "2,000",
+      detail: "Exclusive total supply",
+      accent: "text-amber-300",
     },
     {
       icon: Award,
-      label: "USDT verified paid",
-      value:
-        stats?.paidPayoutsAmountUsdt === null || stats?.paidPayoutsAmountUsdt === undefined
-          ? "—"
-          : `$${stats.paidPayoutsAmountUsdt.toFixed(2)}`,
-      detail: stats ? `${displayCount(stats.pendingPayoutsCount)} payouts pending` : "Manual payout records",
-      accent: "text-amber-300",
+      label: "Free agent reserves",
+      value: "1,000 FREE",
+      detail: "Reserved for Binance Agent ID",
+      accent: "text-cyan-300",
     },
     {
       icon: Users,
       label: "Wallets tracked",
-      value: displayCount(stats?.totalUsers),
-      detail: "Application analytics",
-      accent: "text-blue-300",
+      value: stats?.totalUsers !== null && stats?.totalUsers !== undefined ? displayCount(stats.totalUsers) : "—",
+      detail: "Active collectors",
+      accent: "text-indigo-300",
     },
   ];
 
   return (
-    <section className="stats-grid" aria-label="Agent Legends platform statistics" aria-live="polite">
-      {cards.map(({ icon: Icon, label, value, detail, accent }) => (
-        <article className="stats-card glass-panel" key={label}>
-          <div className={`stats-card-label ${accent}`}>
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
+    <section className="stats-header" aria-labelledby="stats-header-title">
+      <div className="stats-header-inner">
+        <div className="stats-header-top">
+          <div>
+            <span className="stats-header-kicker">BNB Smart Chain (Chain ID: 56)</span>
+            <h2 id="stats-header-title" className="stats-header-heading">
+              Protocol Statistics
+            </h2>
           </div>
-          <strong className="stats-card-value">{value}</strong>
-          <span className="stats-card-detail">{detail}</span>
-        </article>
-      ))}
-      {(statsError || stats?.indexedStatsAvailable === false) && (
-        <p className="stats-error" role="status">
-          {statsError || "Some application-indexed metrics are temporarily unavailable."}
-        </p>
-      )}
+          <span className="stats-header-badge">
+            <span className="stats-header-dot" aria-hidden="true" />
+            Live contract state
+          </span>
+        </div>
+
+        {statsError && (
+          <p className="stats-header-error" role="alert">
+            {statsError}
+          </p>
+        )}
+
+        <div className="stats-grid">
+          {cards.map(({ icon: Icon, label, value, detail, accent }) => (
+            <div key={label} className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-card-label">{label}</span>
+                <span className={`stat-card-icon ${accent}`} aria-hidden="true">
+                  <Icon className="w-4 h-4" />
+                </span>
+              </div>
+              <p className="stat-card-value font-mono">{value}</p>
+              <p className="stat-card-detail">{detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
