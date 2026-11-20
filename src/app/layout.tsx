@@ -5,17 +5,18 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Agent Legends | Free NFT Mint on BNB Chain",
+  metadataBase: new URL("https://agent.agentlegends.workers.dev"),
+  title: "Agent Legends | AI Agent NFT Mint on BNB Smart Chain",
   description:
-    "Mint a free Agent Legends NFT on BNB Smart Chain. A separate $0.10 platform fee per NFT and network gas apply.",
+    "Recruit your Agent Legend on BNB Smart Chain. Strictly capped at 2,000 supply. 1 Free Mint for Binance SPACE ID Agent ID (.ai) holders; Paid mints at 0.0005 BNB.",
   icons: {
     icon: "/agent-legends-logo.jpg",
     shortcut: "/agent-legends-logo.jpg",
     apple: "/agent-legends-logo.jpg",
   },
   openGraph: {
-    title: "Agent Legends | Free NFT Mint on BNB Chain",
-    description: "The next generation of Web3 starts here. Mint, Stake, and Earn on BNB Chain.",
+    title: "Agent Legends | AI Agent NFT Mint on BNB Smart Chain",
+    description: "2,000 Capped Supply. 1 Free Mint for SPACE ID Agent IDs (.ai). 0.0005 BNB Paid Mint.",
     images: ["/agent-legends-logo.jpg"],
   },
   twitter: {
@@ -27,11 +28,13 @@ export const metadata: Metadata = {
   keywords: [
     "Agent Legends",
     "BNB Chain",
+    "BNB Smart Chain",
+    "Agentic Wallet",
+    "SPACE ID",
+    "Binance Agent ID",
     "NFT Minting",
-    "NFT Staking",
-    "Spin to Earn",
-    "USDT Rewards",
-    "Web3 Gaming",
+    "AI Agents",
+    "Web3 Identity",
   ],
 };
 

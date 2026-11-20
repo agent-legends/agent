@@ -162,6 +162,13 @@ export const NFT_ABI = [
   },
   {
     type: "function",
+    name: "MAX_TREASURY_SUPPLY",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "MAX_PER_WALLET",
     stateMutability: "view",
     inputs: [],
@@ -183,7 +190,21 @@ export const NFT_ABI = [
   },
   {
     type: "function",
+    name: "treasuryMintedCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "remainingFreeSupply",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "remainingTreasurySupply",
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
@@ -237,6 +258,38 @@ export const NFT_ABI = [
     stateMutability: "view",
     inputs: [{ name: "user", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],
+  },
+  // --- Owner Admin Functions ---
+  {
+    type: "function",
+    name: "setMintPaused",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "_paused", type: "bool" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setBaseURI",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "_newBaseURI", type: "string" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "mintTreasury",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "quantity", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
   },
   // --- Events ---
   {

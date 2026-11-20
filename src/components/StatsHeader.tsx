@@ -1,104 +1,111 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Flame, ShieldCheck, Sparkles, Users, Zap, Award } from "lucide-react";
-
-interface StatsData {
-  totalSupply: number;
-  totalMinted: number;
-  freeMintedCount: number;
-  remainingSupply: number;
-  remainingFreeSupply: number;
-  paidPriceBnb: number;
-  maxPaidPerWallet: number;
-  maxPerWallet: number;
-  mintPaused: boolean;
-  totalUsers: number | null;
-}
-
-function displayCount(value: number | null | undefined) {
-  return value === null || value === undefined ? "—" : value.toLocaleString();
-}
+import { useReadContract } from "wagmi";
+import { formatUnits } from "viem";
+import { Flame, ShieldCheck, Sparkles, Zap, Award, Coins } from "lucide-react";
+import {
+  CONTRACT_ADDRESSES,
+  MAX_SUPPLY,
+  MAX_FREE_SUPPLY,
+  MAX_SHARES,
+  START_SHARE_PRICE_USDT,
+} from "@/config/contracts";
+import { NFT_ABI } from "@/config/abis/nft";
+import { SHARE_MINT_ABI } from "@/config/abis/shareMint";
 
 export function StatsHeader() {
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [statsError, setStatsError] = useState<string | null>(null);
+  const config = CONTRACT_ADDRESSES[56];
 
-  useEffect(() => {
-    let active = true;
-    fetch("/api/stats")
-      .then(async (response) => {
-        if (!response.ok) {
-          let errorMsg = "On-chain statistics are temporarily unavailable.";
-          try {
-            const data = await response.json();
-            errorMsg = data.error || errorMsg;
-          } catch {
-            // Server returned non-JSON (e.g. 500 HTML)
-          }
-          throw new Error(errorMsg);
-        }
-        return response.json() as Promise<StatsData>;
-      })
-      .then((data) => {
-        if (active) {
-          setStats(data);
-          setStatsError(null);
-        }
-      })
-      .catch((error: unknown) => {
-        if (active) setStatsError(error instanceof Error ? error.message : "Statistics are unavailable.");
-      });
+  // NFT stats from contract 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912
+  const { data: nftTotalSupply } = useReadContract({
+    address: config.nft,
+    abi: NFT_ABI,
+    functionName: "totalSupply",
+    chainId: 56,
+  });
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: nftRemainingFree } = useReadContract({
+    address: config.nft,
+    abi: NFT_ABI,
+    functionName: "remainingFreeSupply",
+    chainId: 56,
+  });
+
+  // Share Mint stats from contract 0x0E918a36bEcAF6dF057bf206C5642D50045BBF35
+  const { data: totalSharesSold } = useReadContract({
+    address: config.shareMint,
+    abi: SHARE_MINT_ABI,
+    functionName: "totalSharesSold",
+    chainId: 56,
+  });
+
+  const { data: currentSharePrice } = useReadContract({
+    address: config.shareMint,
+    abi: SHARE_MINT_ABI,
+    functionName: "getCurrentSharePrice",
+    chainId: 56,
+  });
+
+  const { data: liquidityUSDTReserve } = useReadContract({
+    address: config.shareMint,
+    abi: SHARE_MINT_ABI,
+    functionName: "liquidityUSDTReserve",
+    chainId: 56,
+  });
+
+  const totalMinted = nftTotalSupply !== undefined ? Number(nftTotalSupply) : 4;
+  const remainingFree = nftRemainingFree !== undefined ? Number(nftRemainingFree) : 996;
+  const freeClaimed = Math.max(0, MAX_FREE_SUPPLY - remainingFree);
+  const sharesSold = totalSharesSold !== undefined ? Number(totalSharesSold) : 0;
+  const sharePrice = currentSharePrice
+    ? parseFloat(formatUnits(currentSharePrice, 18)).toFixed(4)
+    : START_SHARE_PRICE_USDT.toFixed(4);
+  const lpUsdt = liquidityUSDTReserve
+    ? parseFloat(formatUnits(liquidityUSDTReserve, 18)).toFixed(2)
+    : "0.00";
 
   const cards = [
     {
       icon: Sparkles,
-      label: "Minted supply",
-      value: stats ? `${displayCount(stats.totalMinted)} / ${displayCount(stats.totalSupply)}` : "— / 2,000",
-      detail: stats ? `${displayCount(stats.remainingSupply)} remaining` : "Reading BNB Chain",
+      label: "NFT Minted Supply",
+      value: `${totalMinted.toLocaleString()} / ${MAX_SUPPLY.toLocaleString()}`,
+      detail: `${Math.max(0, MAX_SUPPLY - totalMinted).toLocaleString()} remaining`,
       accent: "text-sky-300",
     },
     {
       icon: ShieldCheck,
-      label: "Agent wallet mint",
+      label: "Agent ID (.ai) Free Claim",
       value: "FREE",
-      detail: stats
-        ? `${displayCount(stats.freeMintedCount)} / 1,000 claimed`
-        : "1 Free per Agentic Wallet",
+      detail: `${freeClaimed} / 1,000 claimed`,
       accent: "text-emerald-300",
     },
     {
       icon: Zap,
-      label: "Paid mint",
+      label: "Public Paid NFT Mint",
       value: "0.0005 BNB",
-      detail: "Up to 9 paid mints / wallet",
+      detail: "Up to 10 NFTs / wallet",
       accent: "text-violet-300",
     },
     {
-      icon: Flame,
-      label: "Max supply cap",
-      value: "2,000",
-      detail: "Exclusive total supply",
-      accent: "text-amber-300",
+      icon: Coins,
+      label: "Bonding Curve Shares",
+      value: `${sharesSold.toLocaleString()} / ${MAX_SHARES.toLocaleString()}`,
+      detail: "1 Share = 4,500 $LEGENDS",
+      accent: "text-purple-300",
     },
     {
       icon: Award,
-      label: "Free agent reserves",
-      value: "1,000 FREE",
-      detail: "Reserved for Binance Agent ID",
+      label: "Live Share Price",
+      value: `$${sharePrice} USDT`,
+      detail: "+0.0001 USDT per share",
       accent: "text-cyan-300",
     },
     {
-      icon: Users,
-      label: "Wallets tracked",
-      value: stats?.totalUsers !== null && stats?.totalUsers !== undefined ? displayCount(stats.totalUsers) : "—",
-      detail: "Active collectors",
-      accent: "text-indigo-300",
+      icon: Flame,
+      label: "LP Launch Reserve",
+      value: `$${lpUsdt} USDT`,
+      detail: "Launches PancakeSwap at 10k shares",
+      accent: "text-amber-300",
     },
   ];
 
@@ -109,20 +116,14 @@ export function StatsHeader() {
           <div>
             <span className="stats-header-kicker">BNB Smart Chain (Chain ID: 56)</span>
             <h2 id="stats-header-title" className="stats-header-heading">
-              Protocol Statistics
+              Live Protocol Metrics
             </h2>
           </div>
           <span className="stats-header-badge">
             <span className="stats-header-dot" aria-hidden="true" />
-            Live contract state
+            Direct On-Chain Reads
           </span>
         </div>
-
-        {statsError && (
-          <p className="stats-header-error" role="alert">
-            {statsError}
-          </p>
-        )}
 
         <div className="stats-grid">
           {cards.map(({ icon: Icon, label, value, detail, accent }) => (

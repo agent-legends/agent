@@ -3,7 +3,14 @@
 import React from "react";
 import { StatsHeader } from "@/components/StatsHeader";
 import { PageIntro } from "@/components/PageIntro";
+import { AgenticPromptBox } from "@/components/AgenticPromptBox";
 import { FileText, Shield, Users, Award, Code2, Bot, Sparkles, Zap, ShieldCheck } from "lucide-react";
+
+const AGENT_PROMPT = `Interact with the Agent Legends NFT contract on BNB Smart Chain (Chain ID: 56) at address 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912 (or visit https://agent.agentlegends.workers.dev/):
+1. Call \`isAgenticWalletUser(myAddress)\` and \`hasClaimedFree(myAddress)\` to check if my wallet is eligible for the 1 free NFT reserved for Binance Agent ID (.ai) holders.
+2. Check \`remainingWalletAllowance(myAddress)\` and \`totalSupply()\`.
+3. If I am eligible and haven't claimed my free NFT yet, execute \`claimFreeNFT()\` (0 BNB + gas).
+4. Otherwise, tell me how many paid NFTs I can still mint (at 0.0005 BNB each, up to 10 total per wallet) and ask for my confirmation before calling \`mintPaid(quantity)\`.`;
 
 export default function DocsPage() {
   return (
@@ -25,10 +32,10 @@ export default function DocsPage() {
             <span>1. Platform Overview</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends is a dedicated Web3 AI agent collection on BNB Smart Chain. The protocol establishes an exclusive 2,000 operative cap with dual recruitment mechanisms: free on-chain minting for verified Agentic Wallets and accessible paid minting for community collectors.
+            Agent Legends is a dedicated Web3 AI agent collection on BNB Smart Chain. The protocol establishes an exclusive 2,000 operative cap with dual recruitment mechanisms: free on-chain minting for verified Binance SPACE ID Agent ID (.ai) holders and accessible paid minting for community collectors.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
-            <li><strong className="text-white">Network:</strong> BNB Smart Chain (Chain ID: 56).</li>
+            <li><strong className="text-white">Network:</strong> BNB Smart Chain Mainnet (Chain ID: 56).</li>
             <li><strong className="text-white">NFT Contract:</strong> <code className="text-sky-300">0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912</code></li>
             <li><strong className="text-white">Total Supply:</strong> 2,000 NFTs (strictly capped on-chain).</li>
             <li><strong className="text-white">Max Per Wallet:</strong> 10 NFTs total.</li>
@@ -39,10 +46,10 @@ export default function DocsPage() {
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <ShieldCheck className="w-5 h-5 text-sky-400" />
-            <span>2. Agentic Wallet Free Mint</span>
+            <span>2. SPACE ID Agent ID (.ai) Free Mint</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Holders of a Binance Agent ID (Registry: <code className="text-sky-300">0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F</code>) automatically qualify for <strong className="text-[#00FF66]">1 Free NFT Mint</strong>.
+            Holders of a Binance SPACE ID Agent ID (<code className="text-sky-300">.ai</code> domain) automatically qualify for <strong className="text-[#00FF66]">1 Free NFT Mint</strong>.
           </p>
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1">
             <code>claimFreeNFT() — 0 BNB + gas</code>
@@ -68,47 +75,26 @@ export default function DocsPage() {
           </div>
           <ul className="list-disc pl-5 space-y-1.5 text-slate-400">
             <li><strong className="text-white">Price:</strong> 0.0005 BNB (500,000,000,000,000 wei) per NFT.</li>
-            <li><strong className="text-white">Quantity Limit:</strong> Up to 9 paid mints per wallet (or bounded by remaining allowance, max 10 total per wallet).</li>
+            <li><strong className="text-white">Quantity Limit:</strong> Up to 9 paid mints for Agent ID holders (after 1 free claim), and up to 10 paid mints for standard wallets.</li>
             <li><strong className="text-white">Supply Protection:</strong> Contract enforces that paid mints cannot exceed remaining supply or intrude into unminted free agent reserves.</li>
           </ul>
         </section>
 
-        {/* 4. Community Referrals */}
-        <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
-          <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
-            <Users className="w-5 h-5 text-[#00E5FF]" />
-            <span>4. Community Recruitment & Syndicate Links</span>
-          </div>
-          <div className="space-y-2 text-slate-300">
-            <p>• Every connected wallet receives a personalized referral URL: <code>https://agentlegends.xyz/?ref=0x...</code></p>
-            <p>• Share your link with fellow agents, DAOs, and AI syndicates to build your squad.</p>
-            <p>• Top referrers and minters are honored on the official protocol Leaderboard.</p>
-          </div>
-        </section>
-
-        {/* 5. Agentic Wallet & AI Prompts */}
+        {/* 4. Agentic Wallet & AI Prompts */}
         <section className="glass-panel p-6 sm:p-8 rounded-3xl border border-sky-800/60 bg-slate-900/40 space-y-4">
           <div className="flex items-center space-x-2 text-white font-bold text-base uppercase">
             <Bot className="w-5 h-5 text-sky-400" />
-            <span>5. Agentic Wallet & AI Agent Protocol Prompts</span>
+            <span>4. Agentic Wallet & AI Agent Protocol Prompts</span>
           </div>
           <p className="text-slate-300 leading-relaxed">
-            Agent Legends is built for direct interaction via AI Agent wallets (Brian AI, Coinbase AgentKit, GOAT SDK, ElizaOS). You can issue natural language prompts to your agent to execute on-chain functions:
+            Agent Legends is built for direct interaction via AI Agent wallets (Binance AI Pro, OpenClaw, Claude, Coinbase AgentKit, GOAT SDK, ElizaOS). You can issue this natural language prompt to your agent to execute the mint in one command:
           </p>
-          <div className="space-y-3 font-mono text-xs">
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Free Agent Claim Prompt</span>
-              &ldquo;Check if my wallet has a Binance Agent ID on BNB Chain (56), then call claimFreeNFT() on contract 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912 to claim 1 free Agent Legend.&rdquo;
-            </div>
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Paid Mint Prompt</span>
-              &ldquo;Mint [1-9] Agent Legend NFTs on BNB Smart Chain (Chain ID: 56) with contract 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912 using function mintPaid(quantity) sending 0.0005 BNB per NFT.&rdquo;
-            </div>
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300">
-              <span className="text-slate-400 block text-[11px] uppercase mb-1">Official Communications</span>
-              &ldquo;Follow official protocol releases at https://x.com/agent_legends on X (Twitter).&rdquo;
-            </div>
-          </div>
+          <AgenticPromptBox
+            title="Copy Prompt for Your AI Agent"
+            action="Autonomous Execution"
+            prompt={AGENT_PROMPT}
+            contractAddress="0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912"
+          />
         </section>
       </div>
     </div>

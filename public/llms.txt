@@ -1,0 +1,38 @@
+# Agent Legends Ecosystem — AI Agent Execution Guide
+Website: https://agent.agentlegends.workers.dev/
+Network: BNB Smart Chain Mainnet (Chain ID: 56)
+
+## Verified Smart Contract Addresses
+- LEGENDS Share Mint & LP Engine: 0x0E918a36bEcAF6dF057bf206C5642D50045BBF35
+- LEGENDS Token (BEP-20): 0x66E0964A2b7a52C2d68A3a19f4d981B0e5381120
+- Agent Legends NFT (ERC-721): 0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912
+- BSC-USD / USDT (BEP-20, 18 decimals): 0x55d398326f99059fF775485246999027B3197955
+- PancakeSwap V2 Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E
+
+## 1. LEGENDS Share Mint (0x0E918a36bEcAF6dF057bf206C5642D50045BBF35)
+- Total Supply: 100,000 Shares (1 Share = 4,500 LEGENDS; 450,000,000 LEGENDS allocated to minters).
+- Bonding Curve Pricing: Starts at 0.50 USDT for Share #1 and increases by +0.0001 USDT per share sold.
+- Referral & Cashback:
+  - Referred buyers receive 5% instant USDT cashback.
+  - Standard referrers earn 10% instant USDT commission.
+  - Referrers holding 1+ Agent Legends NFT (0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912) earn 15% instant USDT commission.
+- Execution Steps for AI Agents:
+  1. Read exact cost: `calculateMintCost(uint256 quantity)` on `0x0E918a36bEcAF6dF057bf206C5642D50045BBF35`.
+  2. Set `maxUSDTIn = cost * 101 / 100` (1% slippage buffer).
+  3. Call `approve(0x0E918a36bEcAF6dF057bf206C5642D50045BBF35, maxUSDTIn)` on USDT (`0x55d398326f99059fF775485246999027B3197955`).
+  4. Call `buyShares(uint256 quantity, address referrer, uint256 maxUSDTIn)` on `0x0E918a36bEcAF6dF057bf206C5642D50045BBF35` (use `0x0000000000000000000000000000000000000000` if no referrer).
+  5. Once `liquidityLaunched()` is `true`, call `claimTokens()` to receive LEGENDS tokens.
+
+## 2. Agent Legends NFT Mint (0x5690B34dA3eFc5d55511c37A0Ad4988CACE8d912)
+- Total Supply: 2,000 NFTs (First 1,000 FREE for Binance .ai Agent ID holders; remaining 0.0005 BNB each, max 10 total per wallet).
+- Check eligibility: `isAgenticWalletUser(address)` and `hasClaimedFree(address)`.
+- Free Claim: `claimFreeNFT()` (value: 0 BNB).
+- Paid Mint: `mintPaid(uint256 quantity)` (value: `0.0005 BNB * quantity`).
+
+## 3. LEGENDS Token Tax Rule (0x66E0964A2b7a52C2d68A3a19f4d981B0e5381120)
+- 0% buy/sell/transfer tax during the share sale.
+- Automatically activates a 1% DEX buy/sell tax (`isTaxActive() == true`) once all 100,000 shares are sold out. Wallet-to-wallet transfers remain 0% tax.
+
+## Security Rules
+- Always verify Chain ID is 56 (BNB Smart Chain Mainnet).
+- Never transfer BNB or USDT directly to contract addresses; always call `buyShares`, `claimFreeNFT`, or `mintPaid`.
